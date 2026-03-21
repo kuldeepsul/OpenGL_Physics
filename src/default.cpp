@@ -100,30 +100,38 @@ unsigned int getShaderProgram(std::string& path_vert,std::string path_frag)
 
 // Camera functions 
 
-void FPSCamera::rotatecamera(float yaw , float pitch)
+void FPSCamera::rotatecamera(float yawinc , float pitchinc)
 {
-    if (pitch > 90.0f)
+    yaw += yawinc;
+    pitch += pitchinc;
+
+    if (pitch > 89.0f)
     {
         pitch = 89.0f;
     }
-    else if (pitch < -90.0f)
+    else if (pitch < -89.0f)
     {
         pitch = -89.0f;
     }
     float yc = std::cos(glm::radians(yaw));
     float ys = std::sin(glm::radians(yaw));
 
-    float pc = std::cos(glm::radians(-pitch));
-    float ps = std::sin(glm::radians(-pitch));
+    float pc = std::cos(glm::radians(pitch));
+    float ps = std::sin(glm::radians(pitch));
 
     this->camfront.x = yc * pc ;
     this->camfront.y = ps;
     this->camfront.z = ys * pc ;
+
+    this->camfront = glm::normalize(this->camfront);
 };
 
 void FPSCamera::updateViewMatrix()
 {
-    this->viewmatrix = glm::lookAt(campos,campos+camfront,worldup);
+    glm::vec3 right = glm::normalize(glm::cross(this->camfront,this->worldup));
+    glm::vec3 camup = glm::normalize(glm::cross(right,this->camfront));
+
+    this->viewmatrix = glm::lookAt(campos, campos+camfront, camup);
 };
 
 void FPSCamera::processMouseInput(GLFWwindow* window)
@@ -131,19 +139,21 @@ void FPSCamera::processMouseInput(GLFWwindow* window)
     static float lastx = 0 ;
     static float lasty = 0 ;
 
-    double curx = 0 ;
-    double cury = 0 ;
+    double curx ,cury ;
+
     glfwGetCursorPos(window,&curx,&cury);
 
     float deltax = curx - lastx;
-    float deltay = cury - lasty ; 
+    float deltay = lasty - cury ; 
 
     lastx  = curx ; 
     lasty = cury ;
 
     const float sensitivity = 0.1 ;
 
-    this->rotatecamera(curx*sensitivity , cury*sensitivity);
+
+
+    this->rotatecamera(deltax*sensitivity,deltay*sensitivity);
     this->updateViewMatrix();
 
 };

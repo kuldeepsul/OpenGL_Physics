@@ -14,6 +14,8 @@ void main ()
 {
     gl_Position =  Perspective_mat*View_mat*Model_mat*vec4(apos,1.0f);
     vec4 pos = Model_mat*vec4(apos,1.0f);
+
     Fragpos = (pos.xyz);
-    Normal = norm;
+    mat3 normaltransform = inverse(transpose(mat3(Model_mat)));
+    Normal = normaltransform * norm;
 }

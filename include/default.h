@@ -26,7 +26,10 @@ class FPSCamera
     glm::vec3 worldup {0.0f , 1.0f , 0.0f};
     glm::mat4 viewmatrix;
 
-    void rotatecamera(float yaw , float pitch);  
+    float yaw = -90.0f ;
+    float pitch = 0.0f;
+
+    void rotatecamera(float yawinc, float pitchinc);  
     void processMouseInput(GLFWwindow* window);
     void processkeyboardinput(GLFWwindow* window);
     void updateViewMatrix ();
