@@ -27,9 +27,9 @@ void mesh::genBufferObjects()
 mesh MeshGenerator::gencuboidmesh(glm::vec3 sides)
 {
 
-    float hx = sides.x;
-    float hy = sides.y;
-    float hz = sides.z;
+    float hx = sides.x * 0.5f;
+    float hy = sides.y *  0.5f;
+    float hz = sides.z * 0.5f;
 
     std::vector<float> vertexData = {
         // FRONT (+Z)
@@ -292,7 +292,7 @@ rigidbody::rigidbody(shapetype s_param,glm::vec3 side)
     {
         throw std::runtime_error("FATAL ERROR: Invalid rigid body parameters.");
     }
-    this->hcubeside = side;
+    this->hcubeside = 0.5f * side;
 };
 
 rigidbody::rigidbody(shapetype s_param,glm::vec2 sides , glm::vec3 norm)
@@ -303,4 +303,134 @@ rigidbody::rigidbody(shapetype s_param,glm::vec2 sides , glm::vec3 norm)
     }
     this->hplaneside = sides;
     this->normplane = norm;
+};
+
+void rigidbody::checkboundcollision(bound &domain)
+{
+    // Lower bounds .
+    if (this->position.y - this->hcubeside.y  <= domain.negybound)
+    {
+        this->velocity.y = -this->velocity.y ;
+    }
+    // Upper bounds.
+    else if (this->position.y + this->hcubeside.y >= domain.posybound)
+    {
+        this->velocity.y = -this->velocity.y ;
+    }
+
+    // Left bounds .
+    if (this->position.x - this->hcubeside.x <= domain.negxbound)
+    {
+        this->velocity.x = -this->velocity.x ;
+    }
+    // Right bounds.
+    else if (this->position.x + this->hcubeside.x >= domain.posxbound)
+    {
+        this->velocity.x = -this->velocity.x ;
+    }
+
+    // Front bounds .
+    if (this->position.z - this->hcubeside.z <= domain.negzbound)
+    {
+        this->velocity.z = -this->velocity.z ;
+    }
+    // Rear bounds.
+    else if (this->position.z + this->hcubeside.z >= domain.poszbound)
+    {
+        this->velocity.z = -this->velocity.z ;
+    }
+};
+
+void rigidbody::checkboxvboxcollision(rigidbody* other)
+{
+    // check overlap
+    float penx = 0.0f ;
+    float peny = 0.0f ;
+    float penz = 0.0f ; 
+
+    bool overlapx {false};
+    bool overlapy {false};
+    bool overlapz {false};
+
+    // in X 
+
+    if (this->position.x >  other->position.x)
+    {
+        penx = (other->position.x + other->hcubeside.x) - (this->position.x - this->hcubeside.x);
+
+        if (penx >= 0)
+        {
+            overlapx = true ;
+        }
+    }
+    else
+    {
+        penx = (this->position.x + this->hcubeside.x) - (other->position.x - other->hcubeside.x) ;
+
+        if (penx >= 0)
+        {
+            overlapx = true ;
+        }
+    }
+
+    // in Y
+    if (this->position.y >  other->position.y)
+    {
+        peny = (other->position.y + other->hcubeside.y) - (this->position.y - this->hcubeside.y);
+
+        if (peny >= 0)
+        {
+            overlapy = true ;
+        }
+    }
+    else
+    {
+        peny = (this->position.y + this->hcubeside.y) - (other->position.y - other->hcubeside.y) ;
+
+        if (peny >= 0)
+        {
+            overlapy = true ;
+        }
+    }
+
+    // in Z
+    if (this->position.z >  other->position.z)
+    {
+        penz = (other->position.z + other->hcubeside.z) - (this->position.z - this->hcubeside.z);
+
+        if (penz >= 0)
+        {
+            overlapz = true ;
+        }
+    }
+    else
+    {
+        penz = (this->position.z + this->hcubeside.z) - (other->position.z - other->hcubeside.z) ;
+
+        if (penz >= 0)
+        {
+            overlapz = true ;
+        }
+    }
+
+    if (overlapx && overlapy && overlapz)
+    {
+        // Collision resolution. 
+
+        if (penx < peny && penx < penz)
+        {
+            this->velocity.x = - this->velocity.x ;
+            other->velocity.x = - other->velocity.x;
+        }
+        else if (peny < penx && peny < penz)
+        {
+            this->velocity.y = - this->velocity.y ;
+            other->velocity.y = - other->velocity.y;
+        }
+        else if (penz < penx && penz < peny)
+        {
+            this->velocity.z = - this->velocity.z ;
+            other->velocity.z = - other->velocity.z;
+        }
+    }
 };

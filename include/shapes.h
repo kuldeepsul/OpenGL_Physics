@@ -18,6 +18,23 @@ struct meshio
     std::vector <float> normaldata;
     std::vector <float> bufferdata;   
 };
+
+struct bound
+{
+    float negybound ;
+    float posybound ;
+    float poszbound;
+    float negzbound;
+    float posxbound;
+    float negxbound; 
+
+    bound(float xp , float xn , float yp , float yn , float zp , float zn) :
+    posxbound(xp) , negxbound(xn),
+    posybound(yp) , negybound(yn),
+    poszbound(zp) , negzbound(zn){};
+
+};
+
 class mesh
 {
     public:
@@ -51,6 +68,8 @@ struct rigidbody
     glm::vec3 velocity = {0.0f ,0.0f ,0.0f };
     glm::vec3 acceleration = {0.0f ,0.0f ,0.0f };
 
+    bool isCollider {true};
+
     // Shape of body
     shapetype s ;
     
@@ -64,6 +83,10 @@ struct rigidbody
     rigidbody(shapetype s_param,float radii);
     rigidbody(shapetype s_param,glm::vec3 side);
     rigidbody(shapetype s_param,glm::vec2 sides , glm::vec3 norm);
+
+    // Collisions
+    void checkboundcollision(bound &domain);
+    void checkboxvboxcollision(rigidbody* other);
 };
 
 class Entity
@@ -73,8 +96,9 @@ class Entity
     const unsigned int id;
 
     // Rendering Parameters
-    glm::vec3 col = {1.0f ,1.0f , 1.0f};
+    glm::vec3 col;
     glm::mat4 model_matrix = glm::mat4 (1.0f);
+    bool isWireFrame {false};
 
     // Attachments 
     mesh* entitymesh;

@@ -21,12 +21,22 @@ int main()
     
     glm::vec3 cubePositions[] = {
         glm::vec3( 0.0f,  0.0f,  0.0f), 
-        glm::vec3( 0.0f,  50.0f, -15.0f), 
-        glm::vec3(-1.5f,  20.2f, -2.5f),  
-        glm::vec3(-3.8f,  20.0f, -12.3f),  
-        glm::vec3( 2.4f,  20.4f, -3.5f),  
-        glm::vec3(-1.7f,  30.0f, -7.5f), 
-        glm::vec3(-2.7f,  30.0f, -5.5f)   
+        glm::vec3( 0.0f,  3.0f, -1.0f), 
+        glm::vec3(-1.5f,  3.0f, -1.0f),  
+        glm::vec3(-3.8f,  3.0f, -1.0f),  
+        glm::vec3( 2.4f,  3.0f, -1.0f),  
+        glm::vec3(-1.7f,  3.0f, -1.0f), 
+        glm::vec3(-2.7f,  3.0f, -1.0f)   
+    };
+
+    glm::vec3 cubeVelocities[] = {
+        glm::vec3( 0.0f,  0.0f,  0.0f), 
+        glm::vec3( 0.0f,  0.0f,  0.0f), 
+        glm::vec3(-6.0f,  0.0f,  0.0f),  
+        glm::vec3(-2.0f,  0.0f,  0.0f),  
+        glm::vec3( 2.0f,  0.0f,  0.0f),  
+        glm::vec3( 5.0f,  0.0f,  0.0f), 
+        glm::vec3( 8.0f,  0.0f,  0.0f)   
     };
 
     ///////////////////////////////////////////////
@@ -36,62 +46,61 @@ int main()
     cam.camfront = {0.0f, 0.0f ,3.0f};
     cam.updateViewMatrix();
     ///////////////////////////////////////////////
+    // Creating bounds 
+    bound domain (10.0f,-10.0f,10.0f,0.0f,10.0f,-10.0f);
 
     ////////////////////////////////////////////////
     // Scene Generation.
     MeshGenerator MeshGen;
-    float cubeside = 2.0f;
+    float cubeside = 1.0f;
     glm::vec3 cubesides = {cubeside,cubeside,cubeside};
 
     mesh mcube = MeshGen.gencuboidmesh(cubesides);
     mesh mplane = MeshGen.genplanemesh(100.0f , 100.0f);
     mesh mobject = MeshGen.readobj("objs/sphere.obj");
+    mesh mbound = MeshGen.gencuboidmesh({20.0f,10.0f,20.0f});
 
     
     rigidbody* rcube1 = new rigidbody(shapetype::cube ,cubesides);
     rigidbody* rcube2 = new rigidbody(shapetype::cube ,cubesides);
-    rigidbody* rcube3 = new rigidbody(shapetype::cube ,cubesides);
-    rigidbody* rcube4 = new rigidbody(shapetype::cube ,cubesides);
-    rigidbody* rcube5 = new rigidbody(shapetype::cube ,cubesides);
-    rigidbody* rplane = new rigidbody(shapetype::plane ,{100.0f,100.0f},{0.0f ,1.0f ,0.0f});
+
+    rigidbody* rbound = new rigidbody(shapetype::cube ,{10.0f,5.0f,10.0f});
 
     Scene s1;
-    s1.newEntity(1,&mobject,rcube1);
-    s1.newEntity(2,&mobject,rcube2);
-    s1.newEntity(3,&mobject,rcube3);
-    s1.newEntity(4,&mobject,rcube4);
-    s1.newEntity(5,&mobject,rcube5);
-    s1.newEntity(6,&mplane,rplane);
+    s1.newEntity(1,&mcube,rcube1);
+    s1.newEntity(2,&mcube,rcube2);
+
+
+    s1.newEntity(6,&mbound,rbound);
+    
 
     int i {0};
     for (Entity* ent : s1.entities)
-    {
-        
+    {  
         i++;
-        if(ent->id != 6)
-        {     
-            ent->entitybody->position = cubePositions[i] ;  
-            ent->scaleEntity({3.0f,3.0f,3.0f});
-            ent->entitybody->velocity = {0.0f,0.0f,0.0f};
-            ent->col = {0.4f,0.3f,0.8f};
-            ent->updateModelMatrix();
-                       
 
-        }
-        else
+        ent->entitybody->position = cubePositions[i] ;  
+        ent->scaleEntity({1.0f,1.0f,1.0f});
+        ent->entitybody->velocity = 1.5f * cubeVelocities[i];
+        ent->col = {0.4f,0.3f,0.8f};
+        ent->updateModelMatrix(); 
+
+        if (ent->id == 6 )
         {
-            ent->entitybody->velocity = {0.0f,0.0f,0.0f};
-            ent->entitybody->position = {500.0f,0.0f,500.0f};
-            ent->col = {0.1f,0.3f,0.5f};
+            ent->entitybody->position = {0.0f , 5.0f ,0.0f};
+            ent->col = {1.0f,1.0f,1.0f};
+            ent->entitybody->isCollider = false;
+            ent->updateModelMatrix();
+            ent->isWireFrame = true ;
         }
-    
+                       
     }
 
     ///////////////////////////////////////////////////////
-    
-    // Shaders
+    // Shaders 
+
     std::string path_vert = "shader/Vertex_shader.glsl";
-    std::string path_frag = "shader/Lighting_shader.glsl";
+    std::string path_frag = "shader/debug_shader.glsl";
 
     unsigned int program = getShaderProgram(path_vert,path_frag);
 
@@ -102,6 +111,7 @@ int main()
     
 
     glEnable(GL_DEPTH_TEST);
+    bool isPaused {false} ;
 
     while (!glfwWindowShouldClose(window))
     {
@@ -111,9 +121,21 @@ int main()
             glfwSetWindowShouldClose(window,GLFW_TRUE);
         }
 
+        if(glfwGetKey(window,GLFW_KEY_SPACE)==GLFW_PRESS)
+        {
+            if(isPaused)
+            {
+                isPaused = false;
+            }
+            else
+            {
+                isPaused =true ;
+            }
+        }
+
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        //glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
+        
 
         // Camera Controls
         glfwSetInputMode(window,GLFW_CURSOR,GLFW_CURSOR_DISABLED);
@@ -129,23 +151,36 @@ int main()
         unsigned int lightposloc = glGetUniformLocation(program,"lightpos");
         glUniform3fv(lightposloc,1,glm::value_ptr(cam.campos));
 
-
-        for (Entity* ent : s1.entities)
+        if(!isPaused)
         {
-
-            if (ent->id != 6)
+            for (Entity* ent : s1.entities)
             {
-                ent->entitybody->acceleration = 9.8f * glm::vec3 (0.0f , -1.0f ,0.0f);
-                ent->entitybody->velocity += (0.01f) * ent->entitybody->acceleration;
-                ent->entitybody->position += (0.01f) * ent->entitybody->velocity;
-                //ent->updateModelMatrix();
 
-                if (ent->entitybody->position.y - ent->entitybody->hcubeside.y <= 0)
+                if (ent->entitybody->isCollider)
                 {
-                    ent->entitybody->velocity.y = -ent->entitybody->velocity.y ;
+                    //ent->entitybody->acceleration = 9.8f * glm::vec3 (0.0f , -1.0f ,0.0f);
+                    ent->entitybody->velocity += (0.001f) * ent->entitybody->acceleration;
+                    ent->entitybody->position += (0.001f) * ent->entitybody->velocity;
+                    ent->updateModelMatrix();
+                    ent->entitybody->checkboundcollision(domain);
+
+                    for (Entity* ent2 : s1.entities)
+                    {
+                        if(ent2->entitybody->isCollider)
+                        {
+                            if(ent2 == ent)
+                            {
+                                continue;
+                            }
+                            else
+                            {
+                                ent->entitybody->checkboxvboxcollision(ent2->entitybody);
+                            }
+                        }
+                    }
                 }
             }
-        }
+        }   
 
         for (Entity* ent : s1.entities)
         {
@@ -157,8 +192,19 @@ int main()
             unsigned int modelloc = glGetUniformLocation(program,"Model_mat");
             glUniformMatrix4fv(modelloc,1,GL_FALSE,glm::value_ptr(ent->model_matrix));
 
-            glBindVertexArray(ent->entitymesh->VAO);
-            glDrawArrays(GL_TRIANGLES,0,ent->entitymesh->vertexcount);
+            if (!ent->isWireFrame)
+            {
+                glBindVertexArray(ent->entitymesh->VAO);
+                glDrawArrays(GL_TRIANGLES,0,ent->entitymesh->vertexcount);
+            }
+            else
+            {
+                glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
+                glBindVertexArray(ent->entitymesh->VAO);
+                glDrawArrays(GL_TRIANGLES,0,ent->entitymesh->vertexcount);
+                glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
+            }
+
             
         }
 
