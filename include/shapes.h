@@ -67,6 +67,7 @@ struct rigidbody
     glm::vec3 position = {0.0f , 0.0f ,0.0f};
     glm::vec3 velocity = {0.0f ,0.0f ,0.0f };
     glm::vec3 acceleration = {0.0f ,0.0f ,0.0f };
+    float mass {1.0f};
 
     bool isCollider {true};
 
@@ -86,7 +87,7 @@ struct rigidbody
 
     // Collisions
     void checkboundcollision(bound &domain);
-    void checkboxvboxcollision(rigidbody* other);
+    void checkAABB(rigidbody* other);
 };
 
 class Entity

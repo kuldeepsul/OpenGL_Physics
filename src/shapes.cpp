@@ -284,6 +284,7 @@ rigidbody::rigidbody(shapetype s_param,float radii)
     }
 
     this->radius = radii;
+    this->mass = radii;
 };
 
 rigidbody::rigidbody(shapetype s_param,glm::vec3 side)
@@ -308,40 +309,47 @@ rigidbody::rigidbody(shapetype s_param,glm::vec2 sides , glm::vec3 norm)
 void rigidbody::checkboundcollision(bound &domain)
 {
     // Lower bounds .
-    if (this->position.y - this->hcubeside.y  <= domain.negybound)
+    if (this->position.y - this->hcubeside.y  < domain.negybound)
     {
+        this->position.y = domain.negybound + this->hcubeside.y ;
         this->velocity.y = -this->velocity.y ;
     }
     // Upper bounds.
-    else if (this->position.y + this->hcubeside.y >= domain.posybound)
+    else if (this->position.y + this->hcubeside.y > domain.posybound)
     {
+        this->position.y = domain.posybound - this->hcubeside.y ;
         this->velocity.y = -this->velocity.y ;
     }
 
     // Left bounds .
-    if (this->position.x - this->hcubeside.x <= domain.negxbound)
+    if (this->position.x - this->hcubeside.x < domain.negxbound)
     {
+        this->position.x = domain.negxbound + this->hcubeside.x ;
         this->velocity.x = -this->velocity.x ;
+        
     }
     // Right bounds.
-    else if (this->position.x + this->hcubeside.x >= domain.posxbound)
+    else if (this->position.x + this->hcubeside.x > domain.posxbound)
     {
-        this->velocity.x = -this->velocity.x ;
+        this->position.x = domain.posxbound - this->hcubeside.x ;
+        this->velocity.x = -this->velocity.x ;      
     }
 
     // Front bounds .
-    if (this->position.z - this->hcubeside.z <= domain.negzbound)
+    if (this->position.z - this->hcubeside.z < domain.negzbound)
     {
+        this->position.z = domain.negzbound + this->hcubeside.z ;
         this->velocity.z = -this->velocity.z ;
     }
     // Rear bounds.
-    else if (this->position.z + this->hcubeside.z >= domain.poszbound)
+    else if (this->position.z + this->hcubeside.z > domain.poszbound)
     {
+        this->position.z = domain.poszbound - this->hcubeside.z ;
         this->velocity.z = -this->velocity.z ;
     }
 };
 
-void rigidbody::checkboxvboxcollision(rigidbody* other)
+void rigidbody::checkAABB(rigidbody* other)
 {
     // check overlap
     float penx = 0.0f ;
@@ -358,8 +366,10 @@ void rigidbody::checkboxvboxcollision(rigidbody* other)
     {
         penx = (other->position.x + other->hcubeside.x) - (this->position.x - this->hcubeside.x);
 
-        if (penx >= 0)
+        if (penx > 0)
         {
+            // other->position.x  -= 0.5*penx;
+            // this->position.x += 0.5*penx;
             overlapx = true ;
         }
     }
@@ -367,8 +377,10 @@ void rigidbody::checkboxvboxcollision(rigidbody* other)
     {
         penx = (this->position.x + this->hcubeside.x) - (other->position.x - other->hcubeside.x) ;
 
-        if (penx >= 0)
+        if (penx > 0)
         {
+            // this->position.x -= 0.5 * penx; 
+            // other->position.x += 0.5 * penx;          
             overlapx = true ;
         }
     }
@@ -378,8 +390,10 @@ void rigidbody::checkboxvboxcollision(rigidbody* other)
     {
         peny = (other->position.y + other->hcubeside.y) - (this->position.y - this->hcubeside.y);
 
-        if (peny >= 0)
+        if (peny > 0)
         {
+            // other->position.y  -= 0.5*peny;
+            // this->position.y += 0.5*peny;
             overlapy = true ;
         }
     }
@@ -387,8 +401,10 @@ void rigidbody::checkboxvboxcollision(rigidbody* other)
     {
         peny = (this->position.y + this->hcubeside.y) - (other->position.y - other->hcubeside.y) ;
 
-        if (peny >= 0)
+        if (peny > 0)
         {
+            // this->position.y -= 0.5 * peny; 
+            // other->position.y += 0.5 * peny; 
             overlapy = true ;
         }
     }
@@ -398,8 +414,10 @@ void rigidbody::checkboxvboxcollision(rigidbody* other)
     {
         penz = (other->position.z + other->hcubeside.z) - (this->position.z - this->hcubeside.z);
 
-        if (penz >= 0)
+        if (penz > 0)
         {
+            // other->position.z  -= 0.5*penz;
+            // this->position.z += 0.5*penz;
             overlapz = true ;
         }
     }
@@ -407,30 +425,44 @@ void rigidbody::checkboxvboxcollision(rigidbody* other)
     {
         penz = (this->position.z + this->hcubeside.z) - (other->position.z - other->hcubeside.z) ;
 
-        if (penz >= 0)
+        if (penz > 0)
         {
+            // this->position.z -= 0.5 * penz; 
+            // other->position.z += 0.5 * penz; 
             overlapz = true ;
         }
     }
 
     if (overlapx && overlapy && overlapz)
     {
+        float m1 = this->mass;
+        float m2 = other->mass;
+
         // Collision resolution. 
 
         if (penx < peny && penx < penz)
         {
-            this->velocity.x = - this->velocity.x ;
-            other->velocity.x = - other->velocity.x;
+            float vi1 = this->velocity.x;
+            float vi2 = other->velocity.x;
+
+            this->velocity.x = ((m1-m2)/(m1+m2))*vi1 + ((2*m2)/(m1 + m2))* vi2;
+            other->velocity.x =((m2-m1)/(m1+m2))*vi2 + ((2*m1)/(m1 + m2))* vi1;
         }
         else if (peny < penx && peny < penz)
         {
-            this->velocity.y = - this->velocity.y ;
-            other->velocity.y = - other->velocity.y;
+            float vi1 = this->velocity.y;
+            float vi2 = other->velocity.y;
+
+            this->velocity.y = ((m1-m2)/(m1+m2))*vi1 + ((2*m2)/(m1 + m2))* vi2;
+            other->velocity.y =((m2-m1)/(m1+m2))*vi2 + ((2*m1)/(m1 + m2))* vi1;
         }
         else if (penz < penx && penz < peny)
         {
-            this->velocity.z = - this->velocity.z ;
-            other->velocity.z = - other->velocity.z;
+            float vi1 = this->velocity.z;
+            float vi2 = other->velocity.z;
+
+            this->velocity.z = ((m1-m2)/(m1+m2))*vi1 + ((2*m2)/(m1 + m2))* vi2;
+            other->velocity.z =((m2-m1)/(m1+m2))*vi2 + ((2*m1)/(m1 + m2))* vi1;
         }
     }
 };

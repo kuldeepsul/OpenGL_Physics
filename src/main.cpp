@@ -22,22 +22,43 @@ int main()
     glm::vec3 cubePositions[] = {
         glm::vec3( 0.0f,  0.0f,  0.0f), 
         glm::vec3( 0.0f,  3.0f, -1.0f), 
-        glm::vec3(-1.5f,  3.0f, -1.0f),  
-        glm::vec3(-3.8f,  3.0f, -1.0f),  
-        glm::vec3( 2.4f,  3.0f, -1.0f),  
-        glm::vec3(-1.7f,  3.0f, -1.0f), 
-        glm::vec3(-2.7f,  3.0f, -1.0f)   
+        glm::vec3(-1.5f,  2.0f, -2.0f),  
+        glm::vec3(-3.8f,  1.0f, -3.0f),  
+        glm::vec3( 2.4f,  5.0f, -4.0f),  
+        glm::vec3(-1.7f,  3.2f, -5.0f), 
+        glm::vec3(-2.7f,  6.0f, -6.0f)   
+    };
+
+    glm::vec3 cubeVelocities[] = {
+        glm::vec3( 1.0f,  0.0f,  0.0f), 
+        glm::vec3( 0.0f,  5.0f,  0.0f), 
+        glm::vec3(-6.0f,  4.0f,  1.0f),  
+        glm::vec3(-2.0f,  5.0f,  2.0f),  
+        glm::vec3( 4.0f,  2.0f,  -3.0f),  
+        glm::vec3( -5.0f, -4.0f,  -4.0f), 
+        glm::vec3( 1.0f, -6.0f,  5.0f)   
+    };
+    /*
+        glm::vec3 cubePositions[] = {
+        glm::vec3( 0.0f,  0.0f,  0.0f), 
+        glm::vec3( 0.0f,  3.0f,  0.0f), 
+        glm::vec3(-1.5f,  3.0f,  0.0f),  
+        glm::vec3(-3.8f,  3.0f,  0.0f),  
+        glm::vec3( 2.4f,  3.0f,  0.0f),  
+        glm::vec3(-1.7f,  3.2f,  0.0f), 
+        glm::vec3(-2.7f,  3.0f,  0.0f)   
     };
 
     glm::vec3 cubeVelocities[] = {
         glm::vec3( 0.0f,  0.0f,  0.0f), 
-        glm::vec3( 0.0f,  0.0f,  0.0f), 
+        glm::vec3(-2.0f,  0.0f,  0.0f), 
         glm::vec3(-6.0f,  0.0f,  0.0f),  
         glm::vec3(-2.0f,  0.0f,  0.0f),  
         glm::vec3( 2.0f,  0.0f,  0.0f),  
         glm::vec3( 5.0f,  0.0f,  0.0f), 
-        glm::vec3( 8.0f,  0.0f,  0.0f)   
+        glm::vec3( 8.0f,  0.0f,  0.0f) 
     };
+    */
 
     ///////////////////////////////////////////////
     // Initializing Camera
@@ -55,7 +76,13 @@ int main()
     float cubeside = 1.0f;
     glm::vec3 cubesides = {cubeside,cubeside,cubeside};
 
-    mesh mcube = MeshGen.gencuboidmesh(cubesides);
+    mesh mcube1 = MeshGen.gencuboidmesh(cubesides);
+    mesh mcube2 = MeshGen.gencuboidmesh(cubesides);
+    mesh mcube3 = MeshGen.gencuboidmesh(cubesides);
+    mesh mcube4 = MeshGen.gencuboidmesh(cubesides);
+    mesh mcube5 = MeshGen.gencuboidmesh(cubesides);
+    mesh mcube6 = MeshGen.gencuboidmesh(cubesides);
+
     mesh mplane = MeshGen.genplanemesh(100.0f , 100.0f);
     mesh mobject = MeshGen.readobj("objs/sphere.obj");
     mesh mbound = MeshGen.gencuboidmesh({20.0f,10.0f,20.0f});
@@ -63,12 +90,20 @@ int main()
     
     rigidbody* rcube1 = new rigidbody(shapetype::cube ,cubesides);
     rigidbody* rcube2 = new rigidbody(shapetype::cube ,cubesides);
+    rigidbody* rcube3 = new rigidbody(shapetype::cube ,cubesides);
+    rigidbody* rcube4 = new rigidbody(shapetype::cube ,cubesides);
+    rigidbody* rcube5 = new rigidbody(shapetype::cube ,cubesides);
+    rigidbody* rcube6 = new rigidbody(shapetype::cube ,cubesides);
 
     rigidbody* rbound = new rigidbody(shapetype::cube ,{10.0f,5.0f,10.0f});
 
     Scene s1;
-    s1.newEntity(1,&mcube,rcube1);
-    s1.newEntity(2,&mcube,rcube2);
+    s1.newEntity(1,&mcube1,rcube1);
+    s1.newEntity(2,&mcube2,rcube2);
+    s1.newEntity(3,&mcube3,rcube3);
+    s1.newEntity(4,&mcube4,rcube4);
+    s1.newEntity(5,&mcube5,rcube5);
+    s1.newEntity(7,&mcube6,rcube6);
 
 
     s1.newEntity(6,&mbound,rbound);
@@ -100,7 +135,7 @@ int main()
     // Shaders 
 
     std::string path_vert = "shader/Vertex_shader.glsl";
-    std::string path_frag = "shader/debug_shader.glsl";
+    std::string path_frag = "shader/Lighting_shader.glsl";
 
     unsigned int program = getShaderProgram(path_vert,path_frag);
 
@@ -159,8 +194,8 @@ int main()
                 if (ent->entitybody->isCollider)
                 {
                     //ent->entitybody->acceleration = 9.8f * glm::vec3 (0.0f , -1.0f ,0.0f);
-                    ent->entitybody->velocity += (0.001f) * ent->entitybody->acceleration;
-                    ent->entitybody->position += (0.001f) * ent->entitybody->velocity;
+                    ent->entitybody->velocity += (0.01f) * ent->entitybody->acceleration;
+                    ent->entitybody->position += (0.01f) * ent->entitybody->velocity;
                     ent->updateModelMatrix();
                     ent->entitybody->checkboundcollision(domain);
 
@@ -174,7 +209,7 @@ int main()
                             }
                             else
                             {
-                                ent->entitybody->checkboxvboxcollision(ent2->entitybody);
+                                ent->entitybody->checkAABB(ent2->entitybody);
                             }
                         }
                     }
