@@ -82,7 +82,7 @@ struct rigidbody
     rigidbody(shapetype s_param,glm::vec2 sides , glm::vec3 norm);
 
     // Collisions
-    void checkboundcollision(bound &domain);
+    void checkboundcollision(rigidbody* domain);
     void checkAABB(rigidbody* other);
 };
 
@@ -90,8 +90,8 @@ class Entity
 {
     public:
     // Unique Id 
-    const unsigned int id {0};
-    std::string name {"no_name"};
+    unsigned int id {0};
+    std::string name =  {"no_name"};
 
     // Rendering Parameters
     glm::vec3 col {1.0f,1.0f,1.0f};
@@ -133,6 +133,7 @@ class Scene
 {
     public:
     std::vector <Entity*> entities;
+    Entity* scene_bound;
 
     Entity* newEntity(unsigned int id);
     void newEntity(unsigned int id , shapetype s , glm::vec3 sides);

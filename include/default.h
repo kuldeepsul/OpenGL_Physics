@@ -44,10 +44,12 @@ class gui
     public:
     bool OpenEntityCreationWindow {true};
     bool OpenEntityPropertiesWindow {false};
-    bool OpenBodyPropertiesWindow {false};
+    bool OpenEntityUpdateWindow {false};
 
-    void EntityCreationWindow(float& grav);
+    void EntityCreationWindow(float& grav,Scene* scene);
     void EntityPropertiesWindow(Scene* scene);
-    void EntityBodyPropertiesWindow(rigidbody* ebody , mesh emesh);
+    void EntityUpdateWindow(Scene* scene);
+
+    void GetEntityProp(Scene* scene,int &id_param);
 };
 

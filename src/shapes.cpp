@@ -316,45 +316,51 @@ rigidbody::rigidbody(shapetype s_param,glm::vec2 sides , glm::vec3 norm)
     this->normplane = norm;
 };
 
-void rigidbody::checkboundcollision(bound &domain)
+void rigidbody::checkboundcollision(rigidbody* domain)
 {
+    glm::vec3 HEbody = this->position + hcubeside;
+    glm::vec3 LEbody = this->position - hcubeside;
+
+    glm::vec3 HEbound = domain->position + domain->hcubeside;
+    glm::vec3 LEbound = domain->position - domain->hcubeside;
+
     // Lower bounds .
-    if (this->position.y - this->hcubeside.y  < domain.negybound)
+    if (LEbody.y < LEbound.y)
     {
-        this->position.y = domain.negybound + this->hcubeside.y ;
+        this->position.y = LEbound.y + this->hcubeside.y ;
         this->velocity.y = -this->velocity.y ;
     }
     // Upper bounds.
-    else if (this->position.y + this->hcubeside.y > domain.posybound)
+    else if (HEbody.y > HEbound.y)
     {
-        this->position.y = domain.posybound - this->hcubeside.y ;
+        this->position.y = HEbound.y - this->hcubeside.y ;
         this->velocity.y = -this->velocity.y ;
     }
 
     // Left bounds .
-    if (this->position.x - this->hcubeside.x < domain.negxbound)
+    if (LEbody.x < LEbound.x)
     {
-        this->position.x = domain.negxbound + this->hcubeside.x ;
+        this->position.x = LEbound.x + this->hcubeside.x ;
         this->velocity.x = -this->velocity.x ;
         
     }
     // Right bounds.
-    else if (this->position.x + this->hcubeside.x > domain.posxbound)
+    else if (HEbody.x > HEbound.x)
     {
-        this->position.x = domain.posxbound - this->hcubeside.x ;
+        this->position.x =HEbound.x - this->hcubeside.x ;
         this->velocity.x = -this->velocity.x ;      
     }
 
     // Front bounds .
-    if (this->position.z - this->hcubeside.z < domain.negzbound)
+    if (LEbody.z < LEbound.z)
     {
-        this->position.z = domain.negzbound + this->hcubeside.z ;
+        this->position.z = LEbound.z + this->hcubeside.z ;
         this->velocity.z = -this->velocity.z ;
     }
     // Rear bounds.
-    else if (this->position.z + this->hcubeside.z > domain.poszbound)
+    else if (HEbody.z > HEbound.z)
     {
-        this->position.z = domain.poszbound - this->hcubeside.z ;
+        this->position.z = HEbound.z - this->hcubeside.z ;
         this->velocity.z = -this->velocity.z ;
     }
 };
@@ -378,8 +384,8 @@ void rigidbody::checkAABB(rigidbody* other)
 
         if (penx > 0)
         {
-            // other->position.x  -= 0.5*penx;
-            // this->position.x += 0.5*penx;
+            //other->position.x  -= 0.5*penx;
+            //this->position.x += 0.5*penx;
             overlapx = true ;
         }
     }
@@ -389,8 +395,8 @@ void rigidbody::checkAABB(rigidbody* other)
 
         if (penx > 0)
         {
-            // this->position.x -= 0.5 * penx; 
-            // other->position.x += 0.5 * penx;          
+            //this->position.x -= 0.5 * penx; 
+            //other->position.x += 0.5 * penx;          
             overlapx = true ;
         }
     }

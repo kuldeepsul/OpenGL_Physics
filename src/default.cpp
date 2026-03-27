@@ -193,7 +193,7 @@ void FPSCamera::processkeyboardinput(GLFWwindow* window)
     this->updateViewMatrix();
 };
 
-void gui::EntityCreationWindow(float& grav)
+void gui::EntityCreationWindow(float& grav,Scene* scene)
 {
     ImGui::SetNextWindowSize (ImVec2(200,300),ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowPos(ImVec2(0,0),ImGuiCond_FirstUseEver);
@@ -203,13 +203,13 @@ void gui::EntityCreationWindow(float& grav)
     if (ImGui::Button("Create Entity")) 
     {
         this->OpenEntityPropertiesWindow = true;
+
     };
 
-    if (ImGui::Button("Create Bound")) 
+    if (ImGui::Button("Update Entity")) 
     {
-        this->OpenEntityPropertiesWindow = true;
+        this->OpenEntityUpdateWindow = true;
     };
-
 
     ImGui::End();
 }
@@ -220,15 +220,10 @@ void gui::EntityPropertiesWindow(Scene* scene)
     ImGui::SetNextWindowSize (ImVec2(500,600),ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowPos (ImVec2(300,0),ImGuiCond_FirstUseEver);
 
-    static float position [3] = {0.0f ,0.0f ,0.0f};
-    static float velocity [3] = {0.0f ,0.0f ,0.0f};
-    static float acceleration [3] = {0.0f ,0.0f ,0.0f};
-    static float mass = 1.0f;
-    static bool iscollider {false};
-
-    static float color [3] = {1.0f ,1.0f ,1.0f};
-    char name [20];
-    int id_param = 0 ;
+    static float side  = 1.0f;
+    static char name_param [20];
+    static int id_param = 0 ;
+    static bool isbound = false;
 
 
 
@@ -236,24 +231,11 @@ void gui::EntityPropertiesWindow(Scene* scene)
     ImGui::Begin("Object Parameters",&this->OpenEntityPropertiesWindow);
 
     ImGui::InputInt("Entity Id",&id_param);
-    ImGui::InputText("Entity Name", name,20);
+    ImGui::InputText("Entity Name", name_param,20);
+    ImGui::SliderFloat("Size/Mass",&side,0.2f,20.0f,"%.1f");
 
-    ImGui::SetNextItemWidth(400);
-    ImGui::SliderFloat3("Position",position,-10.0f ,10.0f);
+    ImGui::Checkbox("Set as Bounding Box",&isbound);
 
-    ImGui::SetNextItemWidth(400);
-    ImGui::SliderFloat3("Velocity",velocity,-10.0f,10.0f);
-
-    ImGui::SetNextItemWidth(400);
-    ImGui::SliderFloat3("Acceleration",acceleration,-10.0f,10.0f);
-
-    ImGui::SetNextItemWidth(400);
-    ImGui::SliderFloat3("Color",color,0.0f ,1.0f);
-
-    ImGui::SetNextItemWidth(400);
-    ImGui::SliderFloat("Side",&mass,0.1f,5.0f);
-
-    ImGui::RadioButton("Collider",iscollider);
 
     if (ImGui::Button("Create"))
     {
@@ -265,25 +247,149 @@ void gui::EntityPropertiesWindow(Scene* scene)
             std::cout << "Entity Creation Failed" << std::endl;
             return ;
         }
-        ent->col  = {color[0],color[1],color[2]};
 
         // Create mesh for entity
+        ent->name = name_param;
+        ent->id  = id_param;
+
         ent->entitymesh = new mesh();
-        ent->entitymesh->gencuboidmesh({mass, mass,mass});
-        ent->entitybody = new rigidbody(shapetype::cube,{mass,mass,mass});
-        ent->entitybody->isCollider = true ;
-        ent->entitybody->velocity = {velocity[0],velocity[1],velocity[2]};
-        ent->entitybody->acceleration = {acceleration[0],acceleration[1],acceleration[2]};
-        ent->entitybody->hcubeside = {mass, mass,mass};
-        ent->entitybody->isCollider = iscollider;
+        ent->entitymesh->gencuboidmesh({side, side, side});
+
+        ent->entitybody = new rigidbody(shapetype::cube,{side, side, side});
+        ent->entitybody->mass = side;
+
+        if (isbound)
+        {
+            ent->isWireFrame = true;
+            ent->entitybody->isCollider = false;
+            scene->scene_bound = ent;
+        }
+        
         ent->updateModelMatrix();
 
     }
 
-    if (ImGui::Button("Done"))
+    if (ImGui::Button("Close"))
     {
         this->OpenEntityPropertiesWindow = false ;
     }
 
     ImGui::End();
+}
+
+void gui::GetEntityProp(Scene* scene ,int &id_param)
+{
+    static int last_id {-1};
+    static bool id_changed = false ;
+
+    if (last_id != id_param)
+    {
+        id_changed = true;
+        last_id = id_param;
+    }
+    Entity* ent = scene->entities[id_param];
+
+    static glm::vec3 pos  = ent->entitybody->position;
+    static glm::vec3 vel = ent->entitybody->velocity;
+    static glm::vec3 accel = ent->entitybody->acceleration;
+
+    static glm::vec3 color = ent->col;
+    static bool enable_collision = ent->entitybody->isCollider ;
+    static bool enable_wireframe = ent->isWireFrame;
+
+    if (id_changed)
+    {
+        pos = ent->entitybody->position;
+        vel = ent->entitybody->velocity;
+        accel = ent->entitybody->acceleration;
+        color = ent->col;
+        enable_collision = ent->entitybody->isCollider;
+        enable_wireframe = ent->isWireFrame;
+        id_changed = false;
+    }
+    else
+    {
+        pos = ent->entitybody->position;
+        vel = ent->entitybody->velocity;
+        accel = ent->entitybody->acceleration;
+        color = ent->col;
+        enable_collision = ent->entitybody->isCollider;
+        enable_wireframe = ent->isWireFrame;
+        id_changed = false;
+    }
+
+
+    ImGui::Checkbox("Enable Collisions" , &enable_collision);
+    ImGui::Checkbox("Enable Wireframe" , &enable_wireframe);
+    
+    ImGui::SliderFloat3("Position",&pos.x,-5.0f ,5.0f,"%.1f");
+    ImGui::SliderFloat3("Velocity",&vel.x,-5.0f ,5.0f,"%.1f");
+    ImGui::SliderFloat3("Acceleration",&accel.x,-5.0f ,5.0f,"%.1f");
+
+    ImGui::ColorPicker3("Object Color" , &color.x);
+
+
+
+    // assign Properties to object
+    
+    ent->entitybody->isCollider = enable_collision;
+    ent->col = {color[0],color[1],color[2]};
+    ent->entitybody->position = {pos[0],pos[1],pos[2]};
+    ent->entitybody->velocity = {vel[0],vel[1],vel[2]};
+    ent->entitybody->acceleration = {accel[0],accel[1],accel[2]};
+    ent->entitybody->isCollider = enable_collision;
+
+    
+
+    ent->updateModelMatrix();
+
+}
+
+void gui::EntityUpdateWindow(Scene* scene)
+{
+    ImGui::Begin("Properties Editor",&this->OpenEntityUpdateWindow);
+    // Parent content
+    ImGui::Text("Top panel");
+
+    // Child region
+    ImGui::BeginChild("EntityList", ImVec2(0, 300), true);
+
+    static int selectedEntity {-1};
+    for (int i {0} ; i < scene->entities.size() ; i++)
+    {
+        bool selected  = (selectedEntity == i);
+
+
+        if (ImGui::Selectable(scene->entities[i]->name.c_str() , selected))
+        {
+            selectedEntity = i ;
+        }
+        
+    }
+    ImGui::EndChild();
+
+    static bool OpenEditPanel = false;
+    if (ImGui::Button("Edit"))
+    {
+        OpenEditPanel = true;
+    }
+    if (OpenEditPanel)
+    {
+        if (selectedEntity != -1)
+        {
+            ImGui::BeginChild("Props",ImVec2(400,400));
+
+            GetEntityProp(scene,selectedEntity);
+
+            ImGui::EndChild();
+        }
+    }
+
+    
+    ImGui::End();
+    if (!this->OpenEntityUpdateWindow)
+    {
+        selectedEntity = -1;
+        OpenEditPanel = false;
+    }
 }

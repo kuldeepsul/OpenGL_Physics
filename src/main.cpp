@@ -84,6 +84,7 @@ int main()
     cam.updateViewMatrix();
     ///////////////////////////////////////////////
     // Creating bounds 
+    /*
     bound domain (10.0f,-10.0f,5.0f,-5.0f,10.0f,-10.0f);
 
     ////////////////////////////////////////////////
@@ -94,7 +95,7 @@ int main()
 
     shapetype cube = shapetype::cube;
 
-    Scene s1;
+    
     s1.newEntity(1,cube,cubesides);
     s1.newEntity(2,cube,cubesides);
     s1.newEntity(3,cube,cubesides);
@@ -104,7 +105,7 @@ int main()
 
 
 
-    s1.newEntity(6,cube,{10.0f,5.0f,10.0f});
+    s1.newEntity(6,cube,{20.0f,10.0f,20.0f});
     
 
     int i {0};
@@ -118,9 +119,14 @@ int main()
         ent->col = {0.4f,0.3f,0.8f};
         ent->updateModelMatrix(); 
 
+        std::stringstream s ;
+        s << "Cube" << i ;
+        ent->name = s.str();
+        s.clear();
+
         if (ent->id == 6 )
         {
-            ent->entitybody->position = {0.0f , 5.0f ,0.0f};
+            ent->entitybody->position = {0.0f , 0.0f ,0.0f};
             ent->col = {1.0f,1.0f,1.0f};
             ent->entitybody->isCollider = false;
             ent->updateModelMatrix();
@@ -128,7 +134,8 @@ int main()
         }
                        
     }
-
+    */
+    Scene s1;
     ///////////////////////////////////////////////////////
     // Shaders 
 
@@ -206,8 +213,6 @@ int main()
         }
         
 
-
-
         // View Matrix Based on  Camera Controls
         unsigned int viewloc = glGetUniformLocation(program,"View_mat");
         glUniformMatrix4fv(viewloc,1,GL_FALSE,glm::value_ptr(cam.viewmatrix));
@@ -227,7 +232,7 @@ int main()
                     ent->entitybody->velocity += (0.01f) * ent->entitybody->acceleration;
                     ent->entitybody->position += (0.01f) * ent->entitybody->velocity;
                     ent->updateModelMatrix();
-                    ent->entitybody->checkboundcollision(domain);
+                    ent->entitybody->checkboundcollision(s1.scene_bound->entitybody);
 
                     for (Entity* ent2 : s1.entities)
                     {
@@ -282,11 +287,15 @@ int main()
 
         if(ui->OpenEntityCreationWindow)
         {
-            ui->EntityCreationWindow(grav);
+            ui->EntityCreationWindow(grav,&s1);
         }
         if (ui->OpenEntityPropertiesWindow)
         {
             ui->EntityPropertiesWindow(&s1);
+        }
+        if(ui->OpenEntityUpdateWindow)
+        {
+            ui->EntityUpdateWindow(&s1);
         }
 
         ImGui::Render();
@@ -301,3 +310,4 @@ int main()
     glfwTerminate();
     
 }
+
