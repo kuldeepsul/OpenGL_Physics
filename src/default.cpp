@@ -292,6 +292,8 @@ void gui::GetEntityProp(Scene* scene ,int &id_param)
     static glm::vec3 pos  = ent->entitybody->position;
     static glm::vec3 vel = ent->entitybody->velocity;
     static glm::vec3 accel = ent->entitybody->acceleration;
+    static glm::vec3 axis = {1.0f ,0.0f ,0.0f};
+    static float angle = 0.0f;
 
     static glm::vec3 color = ent->col;
     static bool enable_collision = ent->entitybody->isCollider ;
@@ -326,6 +328,10 @@ void gui::GetEntityProp(Scene* scene ,int &id_param)
     ImGui::SliderFloat3("Velocity",&vel.x,-5.0f ,5.0f,"%.1f");
     ImGui::SliderFloat3("Acceleration",&accel.x,-5.0f ,5.0f,"%.1f");
 
+    ImGui::SliderFloat3("Orientation Axis" , &axis.x,-1.0f,1.0f,"%.1f");
+    ImGui::SliderFloat("Angle",&angle,-180.0f,180.0f,"%.1f");
+
+
     ImGui::ColorPicker3("Object Color" , &color.x);
 
 
@@ -338,6 +344,7 @@ void gui::GetEntityProp(Scene* scene ,int &id_param)
     ent->entitybody->velocity = {vel[0],vel[1],vel[2]};
     ent->entitybody->acceleration = {accel[0],accel[1],accel[2]};
     ent->entitybody->isCollider = enable_collision;
+    ent->entitybody->updateorientation(angle,axis);
 
     
 

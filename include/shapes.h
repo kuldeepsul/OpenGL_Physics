@@ -4,8 +4,11 @@
 #include <string>
 #include <iostream>
 #include <cmath>
+#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm/glm.hpp>
 #include <glm/glm/gtc/matrix_transform.hpp>
+#include <glm/glm/gtc/quaternion.hpp>
+#include <glm/glm/gtx/transform.hpp>
 #include <glm/glm/gtc/type_ptr.hpp>
 
 #include <filesystem>
@@ -67,6 +70,9 @@ struct rigidbody
 
     bool isCollider {true};
 
+    // Orientation
+    glm::quat orientation = {1.0f,0.0f,0.0f,0.0f};
+
     // Shape of body
     shapetype s ;
     
@@ -80,6 +86,8 @@ struct rigidbody
     rigidbody(shapetype s_param,float radii);
     rigidbody(shapetype s_param,glm::vec3 side);
     rigidbody(shapetype s_param,glm::vec2 sides , glm::vec3 norm);
+
+    void updateorientation(float angle,glm::vec3 axisofrotation);
 
     // Collisions
     void checkboundcollision(rigidbody* domain);

@@ -283,7 +283,10 @@ void Entity::scaleEntity(glm::vec3 axis)
 
 void Entity::updateModelMatrix()
 {
-    this->model_matrix = glm::translate(glm::mat4 (1.0f) ,this->entitybody->position);
+    glm::mat4 translation_matrix = glm::translate(glm::mat4 (1.0f) ,this->entitybody->position);
+
+    glm::mat4 rotation_matrix = glm::mat4_cast(this->entitybody->orientation);
+    this->model_matrix = translation_matrix * rotation_matrix ;
 };
 
 rigidbody::rigidbody(shapetype s_param,float radii)
@@ -481,4 +484,16 @@ void rigidbody::checkAABB(rigidbody* other)
             other->velocity.z =((m2-m1)/(m1+m2))*vi2 + ((2*m1)/(m1 + m2))* vi1;
         }
     }
+};
+
+void rigidbody::updateorientation(float angle,glm::vec3 axisofrotation)
+{
+    float theta  = glm::radians(angle);
+
+    float c = std::cos(theta*0.5f);
+    float s = std::sin(theta*0.5f);
+
+    glm::vec3 naxis = glm::normalize(axisofrotation);
+
+    this->orientation = { s * naxis.x , s * naxis.y , s * naxis.z , c }; 
 };
