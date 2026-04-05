@@ -21,14 +21,14 @@ unsigned int getShaderProgram(std::string& path_vert,std::string path_frag);
 
 struct meshio
 {
+    // for temporary storage of read data from obj.
     std::vector <float> positiondata;
     std::vector <float> normaldata;
     std::vector <float> bufferdata;   
 };
 
-class GeomFunc
+struct GeomFunc
 {
-    public:
     static float ClosestPtSegementSegment                       // Return Distance squared between the closest point on segement.
     (
     const glm::vec3 &p1 , const glm::vec3 &q1 ,
@@ -37,23 +37,8 @@ class GeomFunc
     );
 };
 
-struct bound
-{
-    float negybound ;
-    float posybound ;
-    float poszbound;
-    float negzbound;
-    float posxbound;
-    float negxbound; 
 
-    bound(float xp , float xn , float yp , float yn , float zp , float zn) :
-    posxbound(xp) , negxbound(xn),
-    posybound(yp) , negybound(yn),
-    poszbound(zp) , negzbound(zn){};
-
-};
-
-class mesh
+class Mesh
 {
     public:
     std::vector <float> data ;
@@ -61,18 +46,30 @@ class mesh
     unsigned int VBO;
     unsigned int VAO;
 
+    // Function to generate VBO , VAO objects according to the mesh data.
     void genBufferObjects();
 
+    // Mesh Generation Methods
     void gencuboidmesh(glm::vec3 sides);
     void gengridmesh(float interval);
     void genplanemesh(float size,glm::vec3 center,glm::vec3 normal);
     void genvectormesh(const float& mag , const glm::vec3& dir , const glm::vec3& position);
-    void readobj(std::string path);
+    void genfromobj(std::string path);
 
-    void readvertex (meshio& iotemp ,std::stringstream &s);
-    void readface (meshio& iotemp ,std::stringstream &s);
-    void readnormal (meshio& iotemp ,std::stringstream &s);
+
 };
+
+struct ObjReader
+{
+    static void ReadMeshFromObjFile(Mesh* object ,std::string path);
+
+    // Mesh Reader helper functions.
+    static void ReadVertexData (meshio& iotemp ,std::stringstream &s);
+    static void ReadFaceData (meshio& iotemp ,std::stringstream &s);
+    static void ReadNormalsData (meshio& iotemp ,std::stringstream &s);
+
+};
+
 
 struct contact
 {
@@ -83,10 +80,9 @@ struct contact
 
 };
 
-enum shapetype {sphere,cube,plane};
+enum class ShapeType {sphere,cube,plane};
 
-class Scene;
-struct rigidbody
+struct RigidBody
 {
     bool isCollider {true};
 
@@ -103,46 +99,43 @@ struct rigidbody
     // Constants
     float mass {1.0f};
 
-    // Contact points
-    rigidbody* contactbody;
-    contact* bodycontact;
-
     // Shape of body
-    shapetype s ;
+    ShapeType s ;
+    glm::vec3 hcubeside;  
 
-    // Dimesions
-    glm::vec3 hcubeside;                // for cube 
+    // Contacts
+    std::vector <contact> cons;
 
     
-    rigidbody(shapetype s_param,glm::vec3 side);
-
+    RigidBody(ShapeType s_param,glm::vec3 side);
     void updateorientation(float angle,glm::vec3 axisofrotation);
 
+    // Collision Resolution.
+    void resolvecontacts();
 
+};
+
+struct CollisionFunc
+{
     // Collision Utils
-    std::vector <glm::vec3> getvertexdata();
-    std::vector <glm::vec3> getSATaxes(const std::vector <glm::vec3> &vertdataA , const std::vector <glm::vec3> &vertdataB) const;
-    glm::vec2 getMinMaxprojection(const glm::vec3 &axis, const std::vector <glm::vec3> & vertexdata) const;
-    float getaxispenetration(const glm::vec3& axis,const std::vector <glm::vec3>& vertdataA , const std::vector<glm::vec3>& vertdataB) const;
-    bool checkinrange(const float& val ,const float& range1,const float& range2);
+    static std::vector <glm::vec3> getvertexdata(RigidBody* body);
+    static std::vector <glm::vec3> getSATaxes(const std::vector <glm::vec3> &vertdataA , const std::vector <glm::vec3> &vertdataB);
+    static glm::vec2 getMinMaxprojection(const glm::vec3 &axis, const std::vector <glm::vec3> & vertexdata);
+    static bool checkinrange(const float& val ,const float& range1,const float& range2);
 
     // Collisions
-    void checkboundcollision(rigidbody* domain);
-    void checkAABB(rigidbody* other);
-    bool checkSAT(rigidbody* other);
+    std::vector <bool> checkvertexinclusion(const std::vector <glm::vec3> &cubedataA , const std::vector <glm::vec3> &cubedataB);
+    static void checkboundcollision(RigidBody* body ,RigidBody* domain);
+    static void checkAABB(RigidBody* body1 , RigidBody* body2);
+    static bool checkSAT(RigidBody* body1 , RigidBody* body2);
 
-    // Contact Generation.
-    void createcontactbodies(Scene* s2);
-    void updatecontact();
-    void getcontactpoints(rigidbody* other);
-    std::vector <bool> checkvertexinclusion(const std::vector <glm::vec3> &cubedataA , const std::vector <glm::vec3> &cubedata);
-    
     
 };
 
 class Entity
 {
     public:
+
     // Unique Id 
     unsigned int id {0};
     std::string name =  {"no_name"};
@@ -153,8 +146,8 @@ class Entity
     bool isWireFrame {false};
 
     // Attachments 
-    mesh* entitymesh = nullptr;
-    rigidbody* entitybody = nullptr;
+    Mesh* entitymesh = nullptr;
+    RigidBody* entitybody = nullptr;
 
 
 
@@ -188,13 +181,11 @@ class Scene
     unsigned int shaderprogram;
 
     Entity* newEntity(unsigned int id);
-    Entity* newEntity(unsigned int id , shapetype s , glm::vec3 sides);
+    Entity* newEntity(unsigned int id , ShapeType s , glm::vec3 sides);
 
     // Utils.
     void showgrids(float intervals);
-    void drawcontactnormal(rigidbody* body);
-    void SATAxes();
-    
+    void showcontacts(RigidBody* body);
 
 };
 

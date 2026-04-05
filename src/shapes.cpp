@@ -95,9 +95,137 @@ glm::vec3 &c1 , glm::vec3 &c2
 ////////////////////////////////////////////////////////////
 
 /////////////////////////////////////////////////////////////
+///////            Obj File Reader Functions        ////////
+
+void ObjReader::ReadMeshFromObjFile(Mesh* object ,std::string path)
+{
+    // Creating full path from reletive path. 
+    std::filesystem::path root = std::filesystem::path(__FILE__).parent_path().parent_path();
+    std::string fullpath = (root/path).string();
+
+    // Reading file 
+    meshio temp;
+    std::string line ;
+
+    std::fstream file (fullpath);
+
+    // checking if the file opened properly.
+    if(!file.is_open())
+    {
+        throw std::runtime_error("FATAL ERROR : .obj file path not found.");
+    }
+
+    while(std::getline(file,line))
+    {
+        std::stringstream s (line);
+        std::string value ;
+        
+        std::getline(s,value,' ');
+
+        if(value == "v")
+        {
+            ReadVertexData(temp,s);
+        }
+        else if (value == "vn")
+        {
+            ReadNormalsData(temp,s);
+        }
+        else if (value == "f")
+        {
+            ReadFaceData(temp,s);
+        }
+        else if (value == "s" || value == "0")
+        {
+            continue;
+        }
+        
+    }
+
+    
+    object->data = temp.bufferdata;
+    int count = object->data.size()/6;
+    object->vertexcount = count;
+    object->genBufferObjects();
+}
+
+void ObjReader::ReadVertexData (meshio& iotemp ,std::stringstream &s)
+{
+    float x,y,z;
+    std::string val;
+
+    std::getline(s,val,' ');
+    x  = std::stof(val);
+
+    std::getline(s,val,' ');
+    y  = std::stof(val);
+        
+    std::getline(s,val,' ');
+    z  = std::stof(val);
+
+    iotemp.positiondata.push_back(x);
+    iotemp.positiondata.push_back(y);
+    iotemp.positiondata.push_back(z);
+
+};
+
+void ObjReader::ReadNormalsData (meshio& iotemp ,std::stringstream &s)
+{
+    float x,y,z;
+    std::string val;
+
+    std::getline(s,val,' ');
+    x  = std::stof(val);
+
+    std::getline(s,val,' ');
+    y  = std::stof(val);
+        
+    std::getline(s,val,' ');
+    z  = std::stof(val);
+    
+    iotemp.normaldata.push_back(x);
+    iotemp.normaldata.push_back(y);
+    iotemp.normaldata.push_back(z);
+};
+
+void ObjReader::ReadFaceData (meshio& iotemp ,std::stringstream &s)
+{
+    std::string entry;
+
+    while(std::getline(s,entry,' '))
+    {
+        std::stringstream s1(entry);
+        std::string val; 
+        int v,t,n;
+
+        std::getline(s1,val,'/');
+        v  = std::stoi(val);
+
+        std::getline(s1,val,'/');
+        //t  = std::stoi(val);
+            
+        std::getline(s1,val,'/');
+        n  = std::stoi(val);
+
+        int vindex = v - 1 ;
+        int nindex = n - 1 ;
+
+        iotemp.bufferdata.push_back(iotemp.positiondata[vindex*3]);
+        iotemp.bufferdata.push_back(iotemp.positiondata[vindex*3 + 1]);
+        iotemp.bufferdata.push_back(iotemp.positiondata[vindex*3 + 2]);
+
+        iotemp.bufferdata.push_back(iotemp.normaldata[nindex*3 ]);
+        iotemp.bufferdata.push_back(iotemp.normaldata[nindex*3 + 1]);
+        iotemp.bufferdata.push_back(iotemp.normaldata[nindex*3 + 2]);
+    }
+    
+};
+
+////////////////////////////////////////////////////////////
+
+/////////////////////////////////////////////////////////////
 //////////        Mesh Generation  function /////////////////
 
-void mesh::genBufferObjects()
+void Mesh::genBufferObjects()
 {
     // generate
     glGenVertexArrays(1,&this->VAO);
@@ -119,7 +247,7 @@ void mesh::genBufferObjects()
     
 };
 
-void mesh::gencuboidmesh(glm::vec3 sides)
+void Mesh::gencuboidmesh(glm::vec3 sides)
 {
 
     float hx = sides.x * 0.5f;
@@ -189,7 +317,7 @@ void mesh::gencuboidmesh(glm::vec3 sides)
 
 };
 
-void mesh::gengridmesh(float interval)
+void Mesh::gengridmesh(float interval)
 {
     float size = 100.0f;
     int samples = size / interval ;
@@ -248,7 +376,7 @@ void mesh::gengridmesh(float interval)
 
 }
 
-void mesh::genvectormesh(const float& mag , const glm::vec3& dir , const glm::vec3& position)
+void Mesh::genvectormesh(const float& mag , const glm::vec3& dir , const glm::vec3& position)
 {
     glm::vec3 start = position;
     glm::vec3 end = position + mag * dir ;
@@ -271,181 +399,20 @@ void mesh::genvectormesh(const float& mag , const glm::vec3& dir , const glm::ve
         
 }
 
-void mesh::readobj(std::string path)
+void Mesh::genfromobj(std::string path)
 {
-    // Creating full path from reletive path. 
-    std::filesystem::path root = std::filesystem::path(__FILE__).parent_path().parent_path();
-    std::string fullpath = (root/path).string();
-
-    // Reading file 
-    meshio temp;
-    std::string line ;
-
-    std::fstream file (fullpath);
-
-    // checking if the file opened properly.
-    if(!file.is_open())
-    {
-        throw std::runtime_error("FATAL ERROR : .obj file path not found.");
-    }
-
-    while(std::getline(file,line))
-    {
-        std::stringstream s (line);
-        std::string value ;
-        
-        std::getline(s,value,' ');
-
-        if(value == "v")
-        {
-            readvertex(temp,s);
-        }
-        else if (value == "vn")
-        {
-            readnormal(temp,s);
-        }
-        else if (value == "f")
-        {
-            readface(temp,s);
-        }
-        else if (value == "s" || value == "0")
-        {
-            continue;
-        }
-        
-    }
-
-    
-    this->data = temp.bufferdata;
-    int count = this->data.size()/6;
-    this->vertexcount = count;
-    this->genBufferObjects();
-
-};
-
-void mesh::readvertex (meshio& iotemp ,std::stringstream &s)
-{
-    float x,y,z;
-    std::string val;
-
-    std::getline(s,val,' ');
-    x  = std::stof(val);
-
-    std::getline(s,val,' ');
-    y  = std::stof(val);
-        
-    std::getline(s,val,' ');
-    z  = std::stof(val);
-
-    iotemp.positiondata.push_back(x);
-    iotemp.positiondata.push_back(y);
-    iotemp.positiondata.push_back(z);
-
-};
-
-void mesh::readnormal (meshio& iotemp ,std::stringstream &s)
-{
-    float x,y,z;
-    std::string val;
-
-    std::getline(s,val,' ');
-    x  = std::stof(val);
-
-    std::getline(s,val,' ');
-    y  = std::stof(val);
-        
-    std::getline(s,val,' ');
-    z  = std::stof(val);
-    
-    iotemp.normaldata.push_back(x);
-    iotemp.normaldata.push_back(y);
-    iotemp.normaldata.push_back(z);
-};
-
-void mesh::readface (meshio& iotemp ,std::stringstream &s)
-{
-    std::string entry;
-
-    while(std::getline(s,entry,' '))
-    {
-        std::stringstream s1(entry);
-        std::string val; 
-        int v,t,n;
-
-        std::getline(s1,val,'/');
-        v  = std::stoi(val);
-
-        std::getline(s1,val,'/');
-        //t  = std::stoi(val);
-            
-        std::getline(s1,val,'/');
-        n  = std::stoi(val);
-
-        int vindex = v - 1 ;
-        int nindex = n - 1 ;
-
-        iotemp.bufferdata.push_back(iotemp.positiondata[vindex*3]);
-        iotemp.bufferdata.push_back(iotemp.positiondata[vindex*3 + 1]);
-        iotemp.bufferdata.push_back(iotemp.positiondata[vindex*3 + 2]);
-
-        iotemp.bufferdata.push_back(iotemp.normaldata[nindex*3 ]);
-        iotemp.bufferdata.push_back(iotemp.normaldata[nindex*3 + 1]);
-        iotemp.bufferdata.push_back(iotemp.normaldata[nindex*3 + 2]);
-    }
-    
+    ObjReader::ReadMeshFromObjFile(this,path);
 };
 
 /////////////////////////////////////////////////////////////////
 
+//////////////////////////////////////////////////////////////////
+//////          Collision Detection                     /////////
 
-
-Entity* Scene::newEntity(unsigned int id)
+void CollisionFunc::checkboundcollision(RigidBody* body ,RigidBody* domain)
 {
-    Entity* ent = new Entity(id);
-    this->entities.push_back(ent);
-
-    return ent;
-}
-
-Entity* Scene::newEntity(unsigned int id , shapetype s , glm::vec3 sides)
-{
-    Entity* ent = new Entity(id);
-
-    // Generete mesh and attach to entity
-    mesh* m = new mesh(); 
-    
-    m->gencuboidmesh(sides);
-    ent->entitymesh = m;
-
-    // Generete rigid body and attach to entity.
-    ent->entitybody = new rigidbody(shapetype::cube,sides);
-    
-    this->entities.push_back(ent);
-    return ent;
-};
-
-void Entity::updateModelMatrix()
-{
-    glm::mat4 translation_matrix = glm::translate(glm::mat4 (1.0f) ,this->entitybody->position);
-
-    glm::mat4 rotation_matrix = glm::mat4_cast(this->entitybody->orientation);
-    this->model_matrix = translation_matrix * rotation_matrix ;
-};
-
-
-rigidbody::rigidbody(shapetype s_param,glm::vec3 side)
-{
-    if(s_param != shapetype::cube)
-    {
-        throw std::runtime_error("FATAL ERROR: Invalid rigid body parameters.");
-    }
-    this->hcubeside = 0.5f * side;
-};
-
-void rigidbody::checkboundcollision(rigidbody* domain)
-{
-    glm::vec3 HEbody = this->position + hcubeside;
-    glm::vec3 LEbody = this->position - hcubeside;
+    glm::vec3 HEbody = body->position + body->hcubeside;
+    glm::vec3 LEbody = body->position - body->hcubeside;
 
     glm::vec3 HEbound = domain->position + domain->hcubeside;
     glm::vec3 LEbound = domain->position - domain->hcubeside;
@@ -453,45 +420,45 @@ void rigidbody::checkboundcollision(rigidbody* domain)
     // Lower bounds .
     if (LEbody.y < LEbound.y)
     {
-        this->position.y = LEbound.y + this->hcubeside.y ;
-        this->velocity.y = -this->velocity.y ;
+        body->position.y = LEbound.y + body->hcubeside.y ;
+        body->velocity.y = -body->velocity.y ;
     }
     // Upper bounds.
     else if (HEbody.y > HEbound.y)
     {
-        this->position.y = HEbound.y - this->hcubeside.y ;
-        this->velocity.y = -this->velocity.y ;
+        body->position.y = HEbound.y - body->hcubeside.y ;
+        body->velocity.y = -body->velocity.y ;
     }
 
     // Left bounds .
     if (LEbody.x < LEbound.x)
     {
-        this->position.x = LEbound.x + this->hcubeside.x ;
-        this->velocity.x = -this->velocity.x ;
+        body->position.x = LEbound.x + body->hcubeside.x ;
+        body->velocity.x = -body->velocity.x ;
         
     }
     // Right bounds.
     else if (HEbody.x > HEbound.x)
     {
-        this->position.x =HEbound.x - this->hcubeside.x ;
-        this->velocity.x = -this->velocity.x ;      
+        body->position.x =HEbound.x - body->hcubeside.x ;
+        body->velocity.x = -body->velocity.x ;      
     }
 
     // Front bounds .
     if (LEbody.z < LEbound.z)
     {
-        this->position.z = LEbound.z + this->hcubeside.z ;
-        this->velocity.z = -this->velocity.z ;
+        body->position.z = LEbound.z + body->hcubeside.z ;
+        body->velocity.z = -body->velocity.z ;
     }
     // Rear bounds.
     else if (HEbody.z > HEbound.z)
     {
-        this->position.z = HEbound.z - this->hcubeside.z ;
-        this->velocity.z = -this->velocity.z ;
+        body->position.z = HEbound.z - body->hcubeside.z ;
+        body->velocity.z = -body->velocity.z ;
     }
 };
 
-void rigidbody::checkAABB(rigidbody* other)
+void CollisionFunc::checkAABB(RigidBody* body1 , RigidBody* body2)
 {
     // check overlap
     float penx = 0.0f ;
@@ -504,9 +471,9 @@ void rigidbody::checkAABB(rigidbody* other)
 
     // in X 
 
-    if (this->position.x >  other->position.x)
+    if (body1->position.x >  body2->position.x)
     {
-        penx = (other->position.x + other->hcubeside.x) - (this->position.x - this->hcubeside.x);
+        penx = (body2->position.x + body2->hcubeside.x) - (body1->position.x - body1->hcubeside.x);
 
         if (penx > 0)
         {
@@ -517,7 +484,7 @@ void rigidbody::checkAABB(rigidbody* other)
     }
     else
     {
-        penx = (this->position.x + this->hcubeside.x) - (other->position.x - other->hcubeside.x) ;
+        penx = (body1->position.x + body1->hcubeside.x) - (body2->position.x - body2->hcubeside.x) ;
 
         if (penx > 0)
         {
@@ -528,9 +495,9 @@ void rigidbody::checkAABB(rigidbody* other)
     }
 
     // in Y
-    if (this->position.y >  other->position.y)
+    if (body1->position.y >  body2->position.y)
     {
-        peny = (other->position.y + other->hcubeside.y) - (this->position.y - this->hcubeside.y);
+        peny = (body2->position.y + body2->hcubeside.y) - (body1->position.y - body1->hcubeside.y);
 
         if (peny > 0)
         {
@@ -541,7 +508,7 @@ void rigidbody::checkAABB(rigidbody* other)
     }
     else
     {
-        peny = (this->position.y + this->hcubeside.y) - (other->position.y - other->hcubeside.y) ;
+        peny = (body1->position.y + body1->hcubeside.y) - (body2->position.y - body2->hcubeside.y) ;
 
         if (peny > 0)
         {
@@ -552,9 +519,9 @@ void rigidbody::checkAABB(rigidbody* other)
     }
 
     // in Z
-    if (this->position.z >  other->position.z)
+    if (body1->position.z >  body2->position.z)
     {
-        penz = (other->position.z + other->hcubeside.z) - (this->position.z - this->hcubeside.z);
+        penz = (body2->position.z + body2->hcubeside.z) - (body1->position.z - body1->hcubeside.z);
 
         if (penz > 0)
         {
@@ -565,7 +532,7 @@ void rigidbody::checkAABB(rigidbody* other)
     }
     else
     {
-        penz = (this->position.z + this->hcubeside.z) - (other->position.z - other->hcubeside.z) ;
+        penz = (body1->position.z + body1->hcubeside.z) - (body2->position.z - body2->hcubeside.z) ;
 
         if (penz > 0)
         {
@@ -577,39 +544,39 @@ void rigidbody::checkAABB(rigidbody* other)
 
     if (overlapx && overlapy && overlapz)
     {
-        float m1 = this->mass;
-        float m2 = other->mass;
+        float m1 = body1->mass;
+        float m2 = body2->mass;
 
         // Collision resolution. 
 
         if (penx < peny && penx < penz)
         {
-            float vi1 = this->velocity.x;
-            float vi2 = other->velocity.x;
+            float vi1 = body1->velocity.x;
+            float vi2 = body2->velocity.x;
 
-            this->velocity.x = ((m1-m2)/(m1+m2))*vi1 + ((2*m2)/(m1 + m2))* vi2;
-            other->velocity.x =((m2-m1)/(m1+m2))*vi2 + ((2*m1)/(m1 + m2))* vi1;
+            body1->velocity.x = ((m1-m2)/(m1+m2))*vi1 + ((2*m2)/(m1 + m2))* vi2;
+            body2->velocity.x =((m2-m1)/(m1+m2))*vi2 + ((2*m1)/(m1 + m2))* vi1;
         }
         else if (peny < penx && peny < penz)
         {
-            float vi1 = this->velocity.y;
-            float vi2 = other->velocity.y;
+            float vi1 = body1->velocity.y;
+            float vi2 = body2->velocity.y;
 
-            this->velocity.y = ((m1-m2)/(m1+m2))*vi1 + ((2*m2)/(m1 + m2))* vi2;
-            other->velocity.y =((m2-m1)/(m1+m2))*vi2 + ((2*m1)/(m1 + m2))* vi1;
+            body1->velocity.y = ((m1-m2)/(m1+m2))*vi1 + ((2*m2)/(m1 + m2))* vi2;
+            body2->velocity.y =((m2-m1)/(m1+m2))*vi2 + ((2*m1)/(m1 + m2))* vi1;
         }
         else if (penz < penx && penz < peny)
         {
-            float vi1 = this->velocity.z;
-            float vi2 = other->velocity.z;
+            float vi1 = body1->velocity.z;
+            float vi2 = body2->velocity.z;
 
-            this->velocity.z = ((m1-m2)/(m1+m2))*vi1 + ((2*m2)/(m1 + m2))* vi2;
-            other->velocity.z =((m2-m1)/(m1+m2))*vi2 + ((2*m1)/(m1 + m2))* vi1;
+            body1->velocity.z = ((m1-m2)/(m1+m2))*vi1 + ((2*m2)/(m1 + m2))* vi2;
+            body2->velocity.z =((m2-m1)/(m1+m2))*vi2 + ((2*m1)/(m1 + m2))* vi1;
         }
     }
 };
 
-bool rigidbody::checkinrange(const float& val ,const float& range1,const float& range2)
+bool CollisionFunc::checkinrange(const float& val ,const float& range1,const float& range2)
 {
     float dif1 = val - range1;
     float dif2 = val - range2;
@@ -629,7 +596,7 @@ bool rigidbody::checkinrange(const float& val ,const float& range1,const float& 
 
 }
 
-std::vector <bool> rigidbody::checkvertexinclusion(const std::vector <glm::vec3> &cubedataA , const std::vector <glm::vec3> &cubedataB)
+std::vector <bool> CollisionFunc::checkvertexinclusion(const std::vector <glm::vec3> &cubedataA , const std::vector <glm::vec3> &cubedataB)
 {
     glm::vec3 axisA = cubedataA[0] - cubedataA[3];
     glm::vec3 axisB = cubedataA[1] - cubedataA[0];
@@ -654,9 +621,9 @@ std::vector <bool> rigidbody::checkvertexinclusion(const std::vector <glm::vec3>
         float valB = glm::dot(cubedataB[i],axisB);
         float valC = glm::dot(cubedataB[i],axisC);
 
-        bool checkA = rigidbody::checkinrange(valA,a1,a2);
-        bool checkB = rigidbody::checkinrange(valB,b1,b2);
-        bool checkC = rigidbody::checkinrange(valC,c1,c2);
+        bool checkA = checkinrange(valA,a1,a2);
+        bool checkB = checkinrange(valB,b1,b2);
+        bool checkC = checkinrange(valC,c1,c2);
 
         if (checkA && checkB && checkC )
         {
@@ -670,26 +637,9 @@ std::vector <bool> rigidbody::checkvertexinclusion(const std::vector <glm::vec3>
     return results;
 }
 
-void rigidbody::getcontactpoints(rigidbody* other)
+std::vector <glm::vec3> CollisionFunc::getvertexdata(RigidBody* body)
 {
-    std::vector <glm::vec3> vertdataA ;
-    std::vector <glm::vec3> vertdataB ;
-
-    vertdataA = this->getvertexdata();
-    vertdataB = other->getvertexdata();
-
-    std::vector <bool> vertexBcubeA;
-    std::vector <bool> vertexAcubeB;
-
-    vertexAcubeB = rigidbody::checkvertexinclusion(vertdataB,vertdataA);
-    vertexBcubeA = rigidbody::checkvertexinclusion(vertdataA,vertdataB);
-
-
-}
-
-std::vector <glm::vec3> rigidbody::getvertexdata()
-{
-    glm::vec3 hside = this->hcubeside;
+    glm::vec3 hside = body->hcubeside;
 
     std::vector <glm::vec3> vertexdata;
 
@@ -706,22 +656,22 @@ std::vector <glm::vec3> rigidbody::getvertexdata()
     glm::vec3 vert8 = { -hside.x, -hside.y, -hside.z};
 
 
-    glm::mat4 rotation_matrix = glm::mat4_cast(this->orientation);
+    glm::mat4 rotation_matrix = glm::mat4_cast(body->orientation);
 
-    vertexdata.push_back(glm::mat3(rotation_matrix)*vert1 + this->position);
-    vertexdata.push_back(glm::mat3(rotation_matrix)*vert2 + this->position);
-    vertexdata.push_back(glm::mat3(rotation_matrix)*vert3 + this->position);
-    vertexdata.push_back(glm::mat3(rotation_matrix)*vert4 + this->position);
-    vertexdata.push_back(glm::mat3(rotation_matrix)*vert5 + this->position);
-    vertexdata.push_back(glm::mat3(rotation_matrix)*vert6 + this->position);
-    vertexdata.push_back(glm::mat3(rotation_matrix)*vert7 + this->position);
-    vertexdata.push_back(glm::mat3(rotation_matrix)*vert8 + this->position);
+    vertexdata.push_back(glm::mat3(rotation_matrix)*vert1 + body->position);
+    vertexdata.push_back(glm::mat3(rotation_matrix)*vert2 + body->position);
+    vertexdata.push_back(glm::mat3(rotation_matrix)*vert3 + body->position);
+    vertexdata.push_back(glm::mat3(rotation_matrix)*vert4 + body->position);
+    vertexdata.push_back(glm::mat3(rotation_matrix)*vert5 + body->position);
+    vertexdata.push_back(glm::mat3(rotation_matrix)*vert6 + body->position);
+    vertexdata.push_back(glm::mat3(rotation_matrix)*vert7 + body->position);
+    vertexdata.push_back(glm::mat3(rotation_matrix)*vert8 + body->position);
 
     return vertexdata;
 
 }
 
-std::vector <glm::vec3> rigidbody::getSATaxes(const std::vector <glm::vec3> &vertdataA ,const std::vector <glm::vec3> &vertdataB) const
+std::vector <glm::vec3> CollisionFunc::getSATaxes(const std::vector <glm::vec3> &vertdataA ,const std::vector <glm::vec3> &vertdataB) 
 {
     glm::vec3 normA1 =  vertdataA[0] - vertdataA[4];
     glm::vec3 normA2 =  vertdataA[1] - vertdataA[0];
@@ -774,7 +724,7 @@ std::vector <glm::vec3> rigidbody::getSATaxes(const std::vector <glm::vec3> &ver
 
 }
 
-glm::vec2 rigidbody::getMinMaxprojection(const glm::vec3 &axis, const std::vector <glm::vec3> & vertexdata) const
+glm::vec2 CollisionFunc::getMinMaxprojection(const glm::vec3 &axis, const std::vector <glm::vec3> & vertexdata)
 {
     float min = 0;
     float max = 0; 
@@ -797,45 +747,26 @@ glm::vec2 rigidbody::getMinMaxprojection(const glm::vec3 &axis, const std::vecto
     return glm::vec2(min,max);
 }
 
-float rigidbody::getaxispenetration (const glm::vec3& axis, const std::vector <glm::vec3>& vertdataA ,const std::vector <glm::vec3>& vertdataB) const
-{
-    //std::cout << "Penetration Detection per axis." << std::endl;
-
-    glm::vec2 projA = rigidbody::getMinMaxprojection(axis,vertdataA);
-    glm::vec2 projB = rigidbody::getMinMaxprojection(axis,vertdataB);
-
-    //std::cout << "Complete!" << std::endl;
-
-    float penetration = 0 ;
-    if (projA.x > projB.y || projB.x > projA.y)
-    {
-        penetration = std::min (projA.y,projB.y) - std::max (projB.x ,projA.x);
-    }
-
-    //std::cout << penetration << std::endl;
-    return penetration;
-}
-
-bool rigidbody::checkSAT(rigidbody* other)
+bool CollisionFunc::checkSAT(RigidBody* body1 , RigidBody* body2)
 {
     std::vector <glm::vec3> vertdataA ;
     std::vector <glm::vec3> vertdataB ;
 
-    vertdataA = this->getvertexdata();
-    vertdataB = other->getvertexdata();
+    vertdataA = getvertexdata(body1);
+    vertdataB = getvertexdata(body2);
     
 
     // Create Normal of faces for SAT Checks.
     
-    std::vector <glm::vec3> SATaxes = this->getSATaxes(vertdataA,vertdataB);
+    std::vector <glm::vec3> SATaxes = getSATaxes(vertdataA,vertdataB);
     bool collision = true ;
     float min_collision = 0;
     glm::vec3 collisionnormal;
     
     for (int i {0} ; i < SATaxes.size() ; i++)
     {
-        glm::vec2 projA = rigidbody::getMinMaxprojection(SATaxes[i],vertdataA);
-        glm::vec2 projB = rigidbody::getMinMaxprojection(SATaxes[i],vertdataB);
+        glm::vec2 projA = getMinMaxprojection(SATaxes[i],vertdataA);
+        glm::vec2 projB = getMinMaxprojection(SATaxes[i],vertdataB);
 
         //std::cout << "Complete!" << std::endl;
 
@@ -854,12 +785,73 @@ bool rigidbody::checkSAT(rigidbody* other)
         }
         
     }
+    contact conA , conB;
+    conA.normal = collisionnormal;
+    conB.normal = -collisionnormal;
+    conA.point = conB.point = {0.0f,0.0f,0.0f};
+    conA.depth = min_collision;
+    conB.depth = min_collision;
+
+    body1->cons.push_back(conA);
+    body2->cons.push_back(conB);
     
     return collision;
 
 }
 
-void rigidbody::updateorientation(float angle,glm::vec3 axisofrotation)
+/////////////////////////////////////////////////////////////////////
+
+
+
+Entity* Scene::newEntity(unsigned int id)
+{
+    Entity* ent = new Entity(id);
+    this->entities.push_back(ent);
+
+    return ent;
+}
+
+Entity* Scene::newEntity(unsigned int id , ShapeType s , glm::vec3 sides)
+{
+    Entity* ent = new Entity(id);
+
+    // Generete Mesh and attach to entity
+    Mesh* m = new Mesh(); 
+    
+    m->gencuboidmesh(sides);
+    ent->entitymesh = m;
+
+    // Generete rigid body and attach to entity.
+    ent->entitybody = new RigidBody(ShapeType::cube,sides);
+    
+    this->entities.push_back(ent);
+    return ent;
+};
+
+void Entity::updateModelMatrix()
+{
+    glm::mat4 translation_matrix = glm::translate(glm::mat4 (1.0f) ,this->entitybody->position);
+
+    glm::mat4 rotation_matrix = glm::mat4_cast(this->entitybody->orientation);
+    this->model_matrix = translation_matrix * rotation_matrix ;
+};
+
+
+RigidBody::RigidBody(ShapeType s_param,glm::vec3 side)
+{
+    if(s_param != ShapeType::cube)
+    {
+        throw std::runtime_error("FATAL ERROR: Invalid rigid body parameters.");
+    }
+    this->hcubeside = 0.5f * side;
+};
+
+void RigidBody::resolvecontacts()
+{
+    this->cons.clear();
+}
+
+void RigidBody::updateorientation(float angle,glm::vec3 axisofrotation)
 {
     float theta  = glm::radians(angle);
 
@@ -880,7 +872,7 @@ void rigidbody::updateorientation(float angle,glm::vec3 axisofrotation)
 void Scene::showgrids(float interval)
 {
     Entity* ent = this->newEntity(100);
-    mesh* m = new mesh();
+    Mesh* m = new Mesh();
     m->gengridmesh(interval);
     ent->entitymesh = m ;
     ent->col = {0.3f,0.3f,0.3f};
@@ -890,22 +882,25 @@ void Scene::showgrids(float interval)
 
 };
 
-void rigidbody::createcontactbodies(Scene* s2)
+void Scene::showcontacts(RigidBody* body)
 {
-    Entity* ent = s2->newEntity(100,shapetype::cube,glm::vec3 {0.3f,0.3f,0.3f});
-    ent->entitybody->isCollider = false;
-    ent->col = {0.0f,1.0f,0.0f};
-    ent->isWireFrame = false;
-    ent->entitybody->position = this->position;
-    this->contactbody = ent->entitybody;
-    ent->updateModelMatrix();
-    
-    ent->name = "contactbody";
-};
 
-void rigidbody::updatecontact()
-{
-    this->contactbody->position = this->bodycontact->point;
+
+    for ( const contact &c : body->cons )
+    {
+        Mesh* vecmesh ;
+        vecmesh->genvectormesh(1.0f,c.normal,body->position);
+        glm::mat4 model_matrix (1.0f);
+
+        // Passing Entity Model Matrix as a uniform. 
+        unsigned int modelloc = glGetUniformLocation(this->shaderprogram,"Model_mat");
+        glUniformMatrix4fv(modelloc,1,GL_FALSE,glm::value_ptr(model_matrix));
+
+        glBindVertexArray(vecmesh->VAO);
+        glDrawArrays(GL_LINES,0,vecmesh->vertexcount);
+        
+    }
+
 }
 
 

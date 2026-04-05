@@ -180,10 +180,10 @@ void gui::EntityPropertiesWindow(Scene* scene)
         ent->name = name_param;
         ent->id  = id_param;
 
-        ent->entitymesh = new mesh();
+        ent->entitymesh = new Mesh();
         ent->entitymesh->gencuboidmesh({side, side, side});
 
-        ent->entitybody = new rigidbody(shapetype::cube,{side, side, side});
+        ent->entitybody = new RigidBody(ShapeType::cube,{side, side, side});
         ent->entitybody->mass = side;
 
         if (isbound)

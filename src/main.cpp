@@ -63,10 +63,10 @@ int main()
     ent->name = "Bounding Box";
     ent->id  = 0;
 
-    ent->entitymesh = new mesh();
+    ent->entitymesh = new Mesh();
     ent->entitymesh->gencuboidmesh(side);
 
-    ent->entitybody = new rigidbody(shapetype::cube,side);
+    ent->entitybody = new RigidBody(ShapeType::cube,side);
     ent->entitybody->mass = side.x;
 
     ent->isWireFrame = true;
@@ -83,16 +83,15 @@ int main()
     ent1->name = "Cube 01";
     ent1->id  = 1;
 
-    ent1->entitymesh = new mesh();
+    ent1->entitymesh = new Mesh();
     ent1->entitymesh->gencuboidmesh(side1);
 
-    ent1->entitybody = new rigidbody(shapetype::cube,side1);
+    ent1->entitybody = new RigidBody(ShapeType::cube,side1);
     ent1->entitybody->mass = side1.x;
 
     ent1->isWireFrame = false;
     ent1->entitybody->isCollider = true;
     ent1->entitybody->position = {-3.0f,3.0f,0.0f};
-    ent1->entitybody->createcontactbodies(&Utils);
 
     // create Cube 02
     
@@ -102,10 +101,10 @@ int main()
     ent2->name = "Cube 02";
     ent2->id  = 2;
 
-    ent2->entitymesh = new mesh();
+    ent2->entitymesh = new Mesh();
     ent2->entitymesh->gencuboidmesh(side2);
 
-    ent2->entitybody = new rigidbody(shapetype::cube,side2);
+    ent2->entitybody = new RigidBody(ShapeType::cube,side2);
     ent2->entitybody->mass = side2.x;
 
     ent2->isWireFrame = false;
@@ -114,15 +113,16 @@ int main()
  
     /////////////////////////////////////////////////////////////////
 
-
+    static float grav {0.0f};
     glEnable(GL_DEPTH_TEST);
     bool isPaused {false} ;
     bool showcontrols {true};
     bool showobjectproperties {false};
-    static float grav {0.0f};
+    static bool firstmouse {true} ;
+    bool drawcontact {true};
+
     cursormode currentmode = cursormode::camera_mode;
-    static bool firstmouse = true ;
-    bool drawcontact = true;
+
 
 
     gui* ui = new gui();
@@ -190,23 +190,25 @@ int main()
 
                 if (ent->entitybody->isCollider)
                 {
+                    
                     ent->entitybody->acceleration = grav * glm::vec3 (0.0f , -1.0f ,0.0f);
                     ent->entitybody->velocity += (0.01f) * ent->entitybody->acceleration;
                     ent->entitybody->position += (0.01f) * ent->entitybody->velocity;
                     ent->updateModelMatrix();
-                    ent->entitybody->checkboundcollision(s1.scene_bound->entitybody);
+                    CollisionFunc::checkboundcollision(ent->entitybody,s1.scene_bound->entitybody);
 
                     for (Entity* ent2 : s1.entities)
                     {
                         if(ent2->entitybody->isCollider)
                         {
+                            ent2->entitybody->resolvecontacts();
                             if(ent2 == ent)
                             {
                                 continue;
                             }
                             else
                             {
-                                ent->entitybody->checkAABB(ent2->entitybody);
+                                CollisionFunc::checkAABB(ent->entitybody,ent2->entitybody);
                             }
                         }
                     }
@@ -233,27 +235,19 @@ int main()
                         }
                         else
                         {
-                            collision_status = ent1->entitybody->checkSAT(ent2->entitybody);
-
+                            collision_status = CollisionFunc::checkSAT(ent1->entitybody , ent2->entitybody);
                         }
                         if(collision_status)
                         {
                             ent1->col = {1.0f,0.0f,0.0f};
                             ent2->col = {1.0f,0.0f,0.0f};
-                            if(ent->entitybody->bodycontact)
-                            {
-                                ent->entitybody->updatecontact();
-                            }
                             
                         }
                         else
                         {
                             ent1->col = {1.0f,1.0f,1.0f};
                             ent2->col = {1.0f,1.0f,1.0f};
-                            if(ent->entitybody->bodycontact)
-                            {
-                                ent->entitybody->contactbody->position = ent->entitybody->position;
-                            }
+
                         }
                     }
                 }
@@ -284,11 +278,11 @@ int main()
             glUniformMatrix4fv(modelloc,1,GL_FALSE,glm::value_ptr(ent->model_matrix));
 
 
+
             if (!ent->isWireFrame)
             {
                 glBindVertexArray(ent->entitymesh->VAO);
                 glDrawArrays(GL_TRIANGLES,0,ent->entitymesh->vertexcount);
-
         
             }
             else
@@ -299,6 +293,12 @@ int main()
                 glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
 
             }
+            // if(ent->entitybody->cons.size())
+            // {
+            //     std::cout << "Showing contacts" << std::endl;
+            //     s1.showcontacts(ent->entitybody);
+            // }
+            // ent->entitybody->resolvecontacts();
 
             
         }
