@@ -598,74 +598,68 @@ bool CollisionFunc::checkinrange(const float& val ,const float& range1,const flo
 
 }
 
-int CollisionFunc::checkvertexinclusion(const std::vector <glm::vec3> &cubedataA , const std::vector <glm::vec3> &cubedataB, const int &axis_id , const glm::vec3 &axis )
+glm::vec3 CollisionFunc::checkvertexinclusion( RigidBody* BodyB , const glm::vec3 &axis )
 {
-    float min , max ;
- 
-    if (axis_id == 0)
-    {
-        min = glm::dot(cubedataA[4],axis);
-        max = glm::dot(cubedataA[0],axis);
-    }
-    else if (axis_id == 1)
-    {
-        min = glm::dot(cubedataA[0],axis);
-        max = glm::dot(cubedataA[1],axis);
-    }
-    else if (axis_id == 2)
-    {
-        min = glm::dot(cubedataA[0],axis);
-        max = glm::dot(cubedataA[3],axis);
-    }
 
+    std::vector <glm::vec3> vertdataB = CollisionFunc::getvertexdata(BodyB);
+
+    float max ;
+    int vertindex = 0;
 
     for (int i {0}; i < 8 ; i ++ )
     {
-        float val = glm::dot(cubedataB[i],axis);
+        float val = glm::dot(vertdataB[i],-axis);
 
-        if( val < max && val > min)
+        if(i == 0)
         {
-           return i ;
+            max = val;
+        }
+
+        if( val > max )
+        {
+            max = val;
+            vertindex = i ;
         }        
     }
-    return -1;
+    return vertdataB[vertindex];
 }
 
-std::pair <std::pair<int,int>,std::pair<int,int>> getcollisionedges(const std::vector <glm::vec3> &vertdataA , 
-                                                                                const std::vector <glm::vec3> &vertdataB , 
-                                                                                const glm::vec3 &axis , 
-                                                                                const int &axis_id
+std::pair <std::pair<int,int>,std::pair<int,int>> getcollisionedges(RigidBody* BodyA , RigidBody* BodyB , 
+                                                                    const glm::vec3 &axis , 
+                                                                    const int &axis_id
 )
 {
-    
+    glm::vec3 centerA = BodyA->position;
+    glm::vec3 extentsA = BodyA->hcubeside;
+    glm::mat3 modelA = glm::mat3_cast(BodyA->orientation);
+
+
+    glm::vec3 centerB = BodyB->position;
+    glm::vec3 extentsB = BodyB->position;
+    glm::mat3 modelB = glm::mat3_cast(BodyB->orientation);
+
+
+
 }
 
 
-glm::vec3 CollisionFunc::getcontactpoint(const std::vector <glm::vec3> &vertdataA , const std::vector <glm::vec3> &vertdataB , const glm::vec3 &axis , const int &axis_id)
+glm::vec3 CollisionFunc::getcontactpoint(RigidBody* BodyA , RigidBody* BodyB , const glm::vec3 &axis , const int &axis_id)
 {
-    int vertid;
+    glm::vec3 collision_point;
     if (axis_id < 6)
     {
         // its a face to vertex collision.
         if(axis_id < 3)
         {
             // vertex of second cube is penetrating into first cube.
-            vertid = checkvertexinclusion(vertdataA,vertdataB,axis_id,axis);
-            if(vertid == -1)
-            {
-                throw std::runtime_error("Unable to find collision point");
-            }
-            return vertdataB[vertid];
+            collision_point = checkvertexinclusion(BodyB,axis);
+            return collision_point;
         }
         else
         {
             // vertex of first cube is penetrating into second cube.
-            vertid = checkvertexinclusion(vertdataA,vertdataB,axis_id - 3,axis);
-            if(vertid == -1)
-            {
-                throw std::runtime_error("Unable to find collision point");
-            }
-            return vertdataA[vertid];
+            collision_point = checkvertexinclusion(BodyA,-axis);
+            return collision_point;
         }
         
     }
@@ -673,7 +667,7 @@ glm::vec3 CollisionFunc::getcontactpoint(const std::vector <glm::vec3> &vertdata
     {
         // its a edge to edge collision.
         std::pair <std::pair<int,int> , std::pair<int,int>> edges_id;
-        edges_id = getcollisionedges(vertdataA,vertdataB,axis,axis_id);
+        edges_id = getcollisionedges(BodyA,BodyB,axis,axis_id);
 
     }
 }
@@ -825,6 +819,12 @@ bool CollisionFunc::checkSAT(RigidBody* body1 , RigidBody* body2)
             collisionnormal = SATaxes[i];
         }
         
+    }
+
+    glm::vec3 dir = body2->position - body1->position;
+    if(glm::dot(dir,collisionnormal) < 0)
+    {
+        collisionnormal = -collisionnormal;
     }
 
 

@@ -124,21 +124,19 @@ struct CollisionFunc
     static glm::vec2 getMinMaxprojection(const glm::vec3 &axis, const std::vector <glm::vec3> & vertexdata);
     static bool checkinrange(const float& val ,const float& range1,const float& range2);
 
-    static glm::vec3 getcontactpoint(const std::vector <glm::vec3> &vertdataA , 
-                                    const std::vector <glm::vec3> &vertdataB ,
+    static glm::vec3 getcontactpoint(RigidBody* BodyA , RigidBody* BodyB ,
                                     const glm::vec3 &axis , 
                                     const int &axis_id
     );
 
     // Return pair of edges , represented by the pair of ids forming these edges.
-    static std::pair <std::pair<int,int>,std::pair<int,int>> getcollisionedges(const std::vector <glm::vec3> &vertdataA , 
-                                                                                const std::vector <glm::vec3> &vertdataB , 
+    static std::pair <std::pair<int,int>,std::pair<int,int>> getcollisionedges(RigidBody* BodyA , RigidBody* BodyB , 
                                                                                 const glm::vec3 &axis , 
                                                                                 const int &axis_id
     );
 
     // Collisions
-    static int checkvertexinclusion(const std::vector <glm::vec3> &cubedataA , const std::vector <glm::vec3> &cubedataB, const int &axis_id , const glm::vec3 &axis );
+    static glm::vec3 checkvertexinclusion( RigidBody* BodyB , const glm::vec3 &axis );
     static void checkboundcollision(RigidBody* body ,RigidBody* domain);
     static void checkAABB(RigidBody* body1 , RigidBody* body2);
     static bool checkSAT(RigidBody* body1 , RigidBody* body2);
