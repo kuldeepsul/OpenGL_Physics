@@ -160,7 +160,7 @@ int main()
             {
                 currentmode = cursormode::gui_mode;
                 firstmouse = true ;
-                isPaused = true;
+                //isPaused = true;
             }
             else  
             {
@@ -185,6 +185,7 @@ int main()
         // Physics Loop
         if(!isPaused)
         {
+            s1.resolvecontacts();
             for (Entity* ent : s1.entities)
             {
 
@@ -201,14 +202,13 @@ int main()
                     {
                         if(ent2->entitybody->isCollider)
                         {
-                            ent2->entitybody->resolvecontacts();
                             if(ent2 == ent)
                             {
                                 continue;
                             }
                             else
                             {
-                                CollisionFunc::checkAABB(ent->entitybody,ent2->entitybody);
+                                //CollisionFunc::checkAABB(ent->entitybody,ent2->entitybody);
                             }
                         }
                     }
@@ -235,7 +235,8 @@ int main()
                         }
                         else
                         {
-                            collision_status = CollisionFunc::checkSAT(ent1->entitybody , ent2->entitybody);
+                            collision_status = CollisionFunc::checkSAT(ent1->entitybody , ent2->entitybody,s1.contacts);
+                            Utils.showcontacts(ent1->entitybody);
                         }
                         if(collision_status)
                         {
@@ -258,6 +259,7 @@ int main()
         s1.drawScene(Presp,cam.viewmatrix,cam.campos);
         Utils.drawScene(Presp,cam.viewmatrix,cam.campos);
         
+
 
         glfwPollEvents();
 

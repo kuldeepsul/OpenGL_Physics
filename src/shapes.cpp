@@ -4,7 +4,7 @@
 ///////////////////////////////////////////////////////////
 //////          Geometry Helper function        //////////
 
-static float ClosestPtSegementSegment                       // Return Distance squared between the closest point on segement.
+float GeomFunc::ClosestPtSegementSegment                       // Return Distance squared between the closest point on segement.
 (
 const glm::vec3 &p1 , const glm::vec3 &q1 ,
 const glm::vec3 &p2 , const glm::vec3 &q2,
@@ -598,7 +598,7 @@ bool CollisionFunc::checkinrange(const float& val ,const float& range1,const flo
 
 }
 
-glm::vec3 CollisionFunc::checkvertexinclusion( RigidBody* BodyB , const glm::vec3 &axis )
+glm::vec3 CollisionFunc::getvertexfacecontactpoint( RigidBody* BodyB , const glm::vec3 &axis )
 {
 
     std::vector <glm::vec3> vertdataB = CollisionFunc::getvertexdata(BodyB);
@@ -624,21 +624,57 @@ glm::vec3 CollisionFunc::checkvertexinclusion( RigidBody* BodyB , const glm::vec
     return vertdataB[vertindex];
 }
 
-std::pair <std::pair<int,int>,std::pair<int,int>> getcollisionedges(RigidBody* BodyA , RigidBody* BodyB , 
-                                                                    const glm::vec3 &axis , 
-                                                                    const int &axis_id
+glm::vec3 CollisionFunc::getedgeedgecontactpoint(RigidBody* BodyA , RigidBody* BodyB , 
+                            const glm::vec3 &axis , 
+                            const int &axis_id
 )
 {
-    glm::vec3 centerA = BodyA->position;
+    glm::vec3 centerA = {BodyA->position.x ,BodyA->position.y ,BodyA->position.z };
     glm::vec3 extentsA = BodyA->hcubeside;
     glm::mat3 modelA = glm::mat3_cast(BodyA->orientation);
 
 
     glm::vec3 centerB = BodyB->position;
-    glm::vec3 extentsB = BodyB->position;
+    glm::vec3 extentsB = BodyB->hcubeside;
     glm::mat3 modelB = glm::mat3_cast(BodyB->orientation);
 
+    // Based on Axis we need to shortlist the edges direction.
+    int iA = std::floor(axis_id / 3);
+    iA = iA - 2; 
+    glm::vec3 axisA = modelA[iA];
 
+    int iB = axis_id % 3;
+    glm::vec3 axisB = modelB[iB];
+
+    int jA = (iA + 1) % 3;
+    int kA = (iA + 2) % 3;
+
+    int jB = (iB + 1) % 3;
+    int kB = (iB + 2) % 3;
+
+    float signjA = (glm::dot(axis,modelA[jA]) > 0) ? 1.0f : -1.0f;
+    float signkA = (glm::dot(axis,modelA[kA]) > 0) ? 1.0f : -1.0f;
+
+    float signjB = (glm::dot(-axis,modelA[jB]) > 0) ? 1.0f : -1.0f;
+    float signkB = (glm::dot(-axis,modelA[kB]) > 0) ? 1.0f : -1.0f;
+
+    glm::vec3 edgeAcenter  = centerA + signjA * modelA[jA] * extentsA[jA] + signkA * modelA[kA] * extentsA[kA] ;
+    glm::vec3 edgeBcenter  = centerB + signjB * modelB[jB] * extentsB[jB] + signkB * modelB[kB] * extentsB[kB] ;
+
+    glm::vec3 edgeAlow = edgeAcenter - modelA[iA] * extentsA[iA];
+    glm::vec3 edgeAhigh = edgeAcenter + modelA[iA] * extentsA[iA];
+
+    glm::vec3 edgeBlow = edgeBcenter - modelB[iB] * extentsB[iB];
+    glm::vec3 edgeBhigh = edgeBcenter + modelB[iB] * extentsA[iB];
+
+    glm::vec3 conA , conB;
+
+    float d2 = GeomFunc::ClosestPtSegementSegment(edgeAlow,edgeBlow,edgeAhigh,edgeBhigh,conA,conB);
+    glm::vec3 condir = conB - conA ;
+
+    glm::vec3 result = (glm::dot(condir,axis) > 0) ? conA : conB;
+
+    return result;
 
 }
 
@@ -646,19 +682,21 @@ std::pair <std::pair<int,int>,std::pair<int,int>> getcollisionedges(RigidBody* B
 glm::vec3 CollisionFunc::getcontactpoint(RigidBody* BodyA , RigidBody* BodyB , const glm::vec3 &axis , const int &axis_id)
 {
     glm::vec3 collision_point;
+
+    
     if (axis_id < 6)
     {
         // its a face to vertex collision.
         if(axis_id < 3)
         {
             // vertex of second cube is penetrating into first cube.
-            collision_point = checkvertexinclusion(BodyB,axis);
+            collision_point = getvertexfacecontactpoint(BodyB,axis);
             return collision_point;
         }
         else
         {
             // vertex of first cube is penetrating into second cube.
-            collision_point = checkvertexinclusion(BodyA,-axis);
+            collision_point = getvertexfacecontactpoint(BodyA,-axis);
             return collision_point;
         }
         
@@ -666,8 +704,8 @@ glm::vec3 CollisionFunc::getcontactpoint(RigidBody* BodyA , RigidBody* BodyB , c
     else
     {
         // its a edge to edge collision.
-        std::pair <std::pair<int,int> , std::pair<int,int>> edges_id;
-        edges_id = getcollisionedges(BodyA,BodyB,axis,axis_id);
+        collision_point = getedgeedgecontactpoint(BodyA,BodyB,axis,axis_id);
+        return collision_point;
 
     }
 }
@@ -782,7 +820,7 @@ glm::vec2 CollisionFunc::getMinMaxprojection(const glm::vec3 &axis, const std::v
     return glm::vec2(min,max);
 }
 
-bool CollisionFunc::checkSAT(RigidBody* body1 , RigidBody* body2)
+bool CollisionFunc::checkSAT(RigidBody* body1 , RigidBody* body2,std::vector <contact*> condata)
 {
     std::vector <glm::vec3> vertdataA ;
     std::vector <glm::vec3> vertdataB ;
@@ -797,6 +835,7 @@ bool CollisionFunc::checkSAT(RigidBody* body1 , RigidBody* body2)
     bool collision = true ;
     float min_collision = 0;
     glm::vec3 collisionnormal;
+    int axisid = 0 ;
     
     for (int i {0} ; i < SATaxes.size() ; i++)
     {
@@ -817,6 +856,7 @@ bool CollisionFunc::checkSAT(RigidBody* body1 , RigidBody* body2)
         {
             min_collision = penetration;
             collisionnormal = SATaxes[i];
+            axisid = i ;
         }
         
     }
@@ -828,16 +868,18 @@ bool CollisionFunc::checkSAT(RigidBody* body1 , RigidBody* body2)
     }
 
 
+    glm::vec3 conpoint = CollisionFunc::getcontactpoint(body1,body2,collisionnormal,axisid);
 
-    contact conA , conB;
-    conA.normal = collisionnormal;
-    conB.normal = -collisionnormal;
-    conA.point = conB.point = {0.0f,0.0f,0.0f};
-    conA.depth = min_collision;
-    conB.depth = min_collision;
+    // generating contact.
+    contact* con = new contact();
+    con->depth = min_collision;
+    con->normal = collisionnormal;
+    con->point = conpoint;
+    con->bodyA = body1;
+    con->bodyB = body2;
 
-    body1->cons.push_back(conA);
-    body2->cons.push_back(conB);
+    // storing contact into contact database.
+    condata.push_back(con);
     
     return collision;
 
@@ -933,10 +975,6 @@ RigidBody::RigidBody(ShapeType s_param,glm::vec3 side)
     this->hcubeside = 0.5f * side;
 };
 
-void RigidBody::resolvecontacts()
-{
-    this->cons.clear();
-}
 
 void RigidBody::updateorientation(float angle,glm::vec3 axisofrotation)
 {
@@ -969,25 +1007,14 @@ void Scene::showgrids(float interval)
 
 };
 
-void Scene::showcontacts(RigidBody* body)
+void Scene::resolvecontacts()
 {
-
-
-    for ( const contact &c : body->cons )
+    for(contact* con : this->contacts)
     {
-        Mesh* vecmesh ;
-        vecmesh->genvectormesh(1.0f,c.normal,body->position);
-        glm::mat4 model_matrix (1.0f);
-
-        // Passing Entity Model Matrix as a uniform. 
-        unsigned int modelloc = glGetUniformLocation(this->shaderprogram,"Model_mat");
-        glUniformMatrix4fv(modelloc,1,GL_FALSE,glm::value_ptr(model_matrix));
-
-        glBindVertexArray(vecmesh->VAO);
-        glDrawArrays(GL_LINES,0,vecmesh->vertexcount);
-        
+        std::cout << "resolving contact. " << std::endl;
+        delete con;
     }
-
+    this->contacts.clear();
 }
 
 

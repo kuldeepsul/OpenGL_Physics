@@ -71,6 +71,7 @@ struct ObjReader
 
 };
 
+struct RigidBody;
 
 struct contact
 {
@@ -79,6 +80,8 @@ struct contact
     glm::vec3 point;
     float depth;
 
+    RigidBody* bodyA;
+    RigidBody* bodyB;
 };
 
 enum class ShapeType {sphere,cube,plane};
@@ -103,16 +106,10 @@ struct RigidBody
     // Shape of body
     ShapeType s ;
     glm::vec3 hcubeside;  
-
-    // Contacts
-    std::vector <contact> cons;
-
     
     RigidBody(ShapeType s_param,glm::vec3 side);
     void updateorientation(float angle,glm::vec3 axisofrotation);
 
-    // Collision Resolution.
-    void resolvecontacts();
 
 };
 
@@ -130,16 +127,16 @@ struct CollisionFunc
     );
 
     // Return pair of edges , represented by the pair of ids forming these edges.
-    static std::pair <std::pair<int,int>,std::pair<int,int>> getcollisionedges(RigidBody* BodyA , RigidBody* BodyB , 
-                                                                                const glm::vec3 &axis , 
-                                                                                const int &axis_id
+    static glm::vec3 getedgeedgecontactpoint( RigidBody* BodyA , RigidBody* BodyB , 
+                                        const glm::vec3 &axis , 
+                                        const int &axis_id
     );
 
     // Collisions
-    static glm::vec3 checkvertexinclusion( RigidBody* BodyB , const glm::vec3 &axis );
+    static glm::vec3 getvertexfacecontactpoint( RigidBody* BodyB , const glm::vec3 &axis );
     static void checkboundcollision(RigidBody* body ,RigidBody* domain);
     static void checkAABB(RigidBody* body1 , RigidBody* body2);
-    static bool checkSAT(RigidBody* body1 , RigidBody* body2);
+    static bool checkSAT(RigidBody* body1 , RigidBody* body2,std::vector <contact*> condata);
     
 
     
@@ -188,6 +185,8 @@ class Scene
 {
     public:
     std::vector <Entity*> entities;
+    std::vector <contact*> contacts;
+    std::vector <Entity*> debugentities;
     Entity* scene_bound;
     std::string vertex_shader;
     std::string fragment_shader;
@@ -196,7 +195,10 @@ class Scene
     Entity* newEntity(unsigned int id);
     Entity* newEntity(unsigned int id , ShapeType s , glm::vec3 sides);
 
+    void resolvecontacts();
+
     void drawScene(glm::mat4 &persp , glm::mat4 &view , glm::vec3 lightpos);
+    
 
     // Utils.
     void showgrids(float intervals);
@@ -204,11 +206,7 @@ class Scene
 
 };
 
-class DebugScene
-{
-    std::vector <Entity*> entities;
 
-};
 
 
 
