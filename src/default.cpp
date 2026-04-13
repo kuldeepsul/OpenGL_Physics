@@ -338,23 +338,49 @@ void gui::ShowContactProperties(Scene* scene,int index)
     glm::vec3 norm = scene->contacts[index]->normal;
     glm::vec3 point = scene->contacts[index]->point;
     ImGui::Text("Contact Normal.");
-    ImGui::Text("X : %.2f , Z : %.2f , Z : %.2f ",norm.x,norm.y,norm.z);
+    ImGui::Text("X : %.2f , Y : %.2f , Z : %.2f ",norm.x,norm.y,norm.z);
     ImGui::Text("Contact Point.");
-    ImGui::Text("X : %.2f , Z : %.2f , Z : %.2f ",point.x,point.y,point.z);
+    ImGui::Text("X : %.2f , Y : %.2f , Z : %.2f ",point.x,point.y,point.z);
 }
 
-void gui::EntityDebugWindow(Scene* scene)
+void gui::ShowSATaxes(Scene* scene,int index)
 {
-    ImGui::Begin("Debug Window");
+    glm::vec3 axis = scene->SATaxes[index];
 
+    ImGui::Text("X : %.2f , Y : %.2f , Z : %.2f ",axis.x,axis.y,axis.z);
+}
+
+void gui::ContactDebugWindow(Scene* scene)
+{
+    ImGui::Begin(" Contact Debug Window");
+
+    ImGui::BeginChild("Contact Data");
     for(int i {0} ; i < scene->contacts.size() ; i++)
     {
-        ImGui::BeginChild("Contact Data");
+        
         ImGui::Text("Contact %i", i);
 
         ShowContactProperties(scene,i);
 
-        ImGui::EndChild();
+
     }
+    ImGui::EndChild();
+    ImGui::End();
+}
+
+void gui::SATDebugWindow(Scene* scene)
+{
+    
+    ImGui::Begin(" Current SAT Axes.");
+
+    ImGui::BeginChild("SAT Axes");
+    for (int i {0} ; i < scene->SATaxes.size() ; i++)
+    {
+        
+        ImGui::Text("Axis %i" , i );
+        ShowSATaxes(scene,i);
+
+    }
+    ImGui::EndChild();
     ImGui::End();
 }

@@ -137,7 +137,7 @@ struct CollisionFunc
     static glm::vec3 getvertexfacecontactpoint( RigidBody* BodyB , const glm::vec3 &axis );
     static void checkboundcollision(RigidBody* body ,RigidBody* domain);
     static void checkAABB(RigidBody* body1 , RigidBody* body2);
-    static bool checkSAT(RigidBody* body1 , RigidBody* body2,std::vector <contact*> &condata);
+    static bool checkSAT(RigidBody* body1 , RigidBody* body2,std::vector <contact*> &condata,std::vector <glm::vec3> &checkaxes);
     
 
     
@@ -188,6 +188,7 @@ class Scene
     std::vector <Entity*> entities;
     std::vector <contact*> contacts;
     std::vector <Mesh*> debugvectors;
+    std::vector <glm::vec3> SATaxes;
     Entity* scene_bound;
     unsigned int shaderprogram;
     Mesh* contactmesh = nullptr;

@@ -111,7 +111,7 @@ int main()
     ent2->isWireFrame = false;
     ent2->entitybody->isCollider = true;
     ent2->entitybody->position = {-1.2f, 3.0f,0.0f};
-    ent2->entitybody->updateorientation(-65.0f, glm::vec3{0.0f,1.0f,0.0f});
+    ent2->entitybody->updateorientation(50.2f, glm::vec3{1.0f,1.0f,0.0f});
  
     /////////////////////////////////////////////////////////////////
 
@@ -239,7 +239,7 @@ int main()
                         }
                         else
                         {
-                            collision_status = CollisionFunc::checkSAT(ent1->entitybody , ent2->entitybody,s1.contacts);
+                            collision_status = CollisionFunc::checkSAT(ent1->entitybody , ent2->entitybody,s1.contacts,s1.SATaxes);
                         }
                         if(collision_status)
                         {
@@ -264,8 +264,6 @@ int main()
         s1.drawobjectbasisvectors(Presp,cam.viewmatrix,cam.campos,GL_TRIANGLES);
         Utils.drawScene(Presp,cam.viewmatrix,cam.campos,GL_LINES);
         
-
-
         glfwPollEvents();
 
         // Start ImGui Frame
@@ -287,7 +285,11 @@ int main()
         }
         if (showcontactdebugdata)
         {
-            ui->EntityDebugWindow(&s1);
+            ui->ContactDebugWindow(&s1);
+        }
+        if (ui->OpenSATDebugWindow)
+        {
+            ui->SATDebugWindow(&s1);
         }
 
         ImGui::Render();
@@ -295,6 +297,7 @@ int main()
         glfwSwapBuffers(window);
 
     }
+
     // Terminate Imgui
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();

@@ -66,7 +66,7 @@ glm::vec3 &c1 , glm::vec3 &c2
         }
     }
             
-    t =( (b * s) + f) / c ;
+    t =( (b * s) + f) / e ;
 
     // If t lies [0,1] then we are done , if not then we clamp t , and recompute s , that is the closest point to current t .
 
@@ -95,7 +95,6 @@ glm::vec3 &c1 , glm::vec3 &c2
 
 
 ////////////////////////////////////////////////////////////
-
 /////////////////////////////////////////////////////////////
 ///////            Obj File Reader Functions        ////////
 
@@ -621,28 +620,22 @@ bool CollisionFunc::checkinrange(const float& val ,const float& range1,const flo
 
 glm::vec3 CollisionFunc::getvertexfacecontactpoint( RigidBody* BodyB , const glm::vec3 &axis )
 {
+    glm::vec3 centerB = BodyB->position;
+    glm::vec3 extentsB = BodyB->hcubeside;
+    glm::mat3 modelB = glm::mat3_cast(BodyB->orientation);
 
-    std::vector <glm::vec3> vertdataB = CollisionFunc::getvertexdata(BodyB);
+    glm::vec3 iB = glm::normalize(modelB[0]);
+    glm::vec3 jB = glm::normalize(modelB[1]);
+    glm::vec3 kB = glm::normalize(modelB[2]);
 
-    float max ;
-    int vertindex = 0;
+    float signiB = (glm::dot(axis,iB) > 0) ? 1.0f : -1.0f;
+    float signjB = (glm::dot(axis,jB) > 0) ? 1.0f : -1.0f;
+    float signkB = (glm::dot(axis,kB) > 0) ? 1.0f : -1.0f;
 
-    for (int i {0}; i < 8 ; i ++ )
-    {
-        float val = glm::dot(vertdataB[i],-axis);
 
-        if(i == 0)
-        {
-            max = val;
-        }
+    glm::vec3 vertex = centerB + signiB * modelB[0] * extentsB[0] + signjB * modelB[1] * extentsB[1] + signkB * modelB[2] * extentsB[2];
 
-        if( val > max )
-        {
-            max = val;
-            vertindex = i ;
-        }        
-    }
-    return vertdataB[vertindex];
+    return vertex;
 }
 
 glm::vec3 CollisionFunc::getedgeedgecontactpoint(RigidBody* BodyA , RigidBody* BodyB , 
@@ -676,8 +669,8 @@ glm::vec3 CollisionFunc::getedgeedgecontactpoint(RigidBody* BodyA , RigidBody* B
     float signjA = (glm::dot(axis,modelA[jA]) > 0) ? 1.0f : -1.0f;
     float signkA = (glm::dot(axis,modelA[kA]) > 0) ? 1.0f : -1.0f;
 
-    float signjB = (glm::dot(-axis,modelA[jB]) > 0) ? 1.0f : -1.0f;
-    float signkB = (glm::dot(-axis,modelA[kB]) > 0) ? 1.0f : -1.0f;
+    float signjB = (glm::dot(-axis,modelB[jB]) > 0) ? 1.0f : -1.0f;
+    float signkB = (glm::dot(-axis,modelB[kB]) > 0) ? 1.0f : -1.0f;
 
     glm::vec3 edgeAcenter  = centerA + signjA * modelA[jA] * extentsA[jA] + signkA * modelA[kA] * extentsA[kA] ;
     glm::vec3 edgeBcenter  = centerB + signjB * modelB[jB] * extentsB[jB] + signkB * modelB[kB] * extentsB[kB] ;
@@ -711,13 +704,13 @@ glm::vec3 CollisionFunc::getcontactpoint(RigidBody* BodyA , RigidBody* BodyB , c
         if(axis_id < 3)
         {
             // vertex of second cube is penetrating into first cube.
-            collision_point = getvertexfacecontactpoint(BodyB,axis);
+            collision_point = getvertexfacecontactpoint(BodyB,-axis);
             return collision_point;
         }
         else
         {
             // vertex of first cube is penetrating into second cube.
-            collision_point = getvertexfacecontactpoint(BodyA,-axis);
+            collision_point = getvertexfacecontactpoint(BodyA,axis);
             return collision_point;
         }
         
@@ -844,7 +837,7 @@ glm::vec2 CollisionFunc::getMinMaxprojection(const glm::vec3 &axis, const std::v
     return glm::vec2(min,max);
 }
 
-bool CollisionFunc::checkSAT(RigidBody* body1 , RigidBody* body2,std::vector <contact*> &condata)
+bool CollisionFunc::checkSAT(RigidBody* body1 , RigidBody* body2,std::vector <contact*> &condata,std::vector <glm::vec3> &checkaxes)
 {
     std::vector <glm::vec3> vertdataA ;
     std::vector <glm::vec3> vertdataB ;
@@ -864,6 +857,8 @@ bool CollisionFunc::checkSAT(RigidBody* body1 , RigidBody* body2,std::vector <co
     
     for (int i {0} ; i < SATaxes.size() ; i++)
     {
+        // storing SAT axes for debugging.
+        checkaxes.push_back(SATaxes[i]);
         glm::vec2 projA = getMinMaxprojection(SATaxes[i],vertdataA);
         glm::vec2 projB = getMinMaxprojection(SATaxes[i],vertdataB);
 
@@ -880,6 +875,8 @@ bool CollisionFunc::checkSAT(RigidBody* body1 , RigidBody* body2,std::vector <co
         if (first_check)
         {
             min_collision = penetration;
+            collisionnormal = SATaxes[i];
+            axisid = i ;
             first_check = false;
         }
         
@@ -1063,6 +1060,7 @@ void Scene::resolvecontacts()
     }
     this->contacts.clear();
     this->debugvectors.clear();
+    this->SATaxes.clear();
 }
 
 void Scene::drawcontacts(glm::mat4 &persp , glm::mat4 &view , glm::vec3 lightpos,int gl_primitive)
@@ -1134,9 +1132,9 @@ void Scene::drawobjectbasisvectors(glm::mat4 &persp , glm::mat4 &view , glm::vec
     Mesh* yvec = new Mesh();
     Mesh* zvec = new Mesh();
     glm::vec3 origin = {0.0f,0.0f,0.0f};
-    xvec->genvectormesh(5.0f,glm::vec3 {1.0f,0.0f,0.0f},origin);
-    yvec->genvectormesh(5.0f,glm::vec3 {0.0f,1.0f,0.0f},origin);
-    zvec->genvectormesh(5.0f,glm::vec3 {0.0f,0.0f,1.0f},origin);
+    xvec->genvectormesh(2.0f,glm::vec3 {1.0f,0.0f,0.0f},origin);
+    yvec->genvectormesh(2.0f,glm::vec3 {0.0f,1.0f,0.0f},origin);
+    zvec->genvectormesh(2.0f,glm::vec3 {0.0f,0.0f,1.0f},origin);
 
     this->debugvectors.push_back(xvec);
     this->debugvectors.push_back(yvec);
@@ -1157,22 +1155,27 @@ void Scene::drawobjectbasisvectors(glm::mat4 &persp , glm::mat4 &view , glm::vec
 
     for (Entity* ent : this->entities)
     {
+        glm::mat4 modelmat = ent->model_matrix;
+
         if(ent == this->scene_bound)
-        {
-            continue;
+        {// using this entity to draw global basis vectors.
+            modelmat = glm::mat4 (1.0f);
+            
         }
         glm::vec3 colx = {1.0f,0.0f,0.0f};
         glm::vec3 coly = {0.0f,1.0f,0.0f};
         glm::vec3 colz = {0.0f,0.0f,1.0f};
 
+        
+
         // Passing Entity Model Matrix as a uniform. 
         unsigned int modelloc = glGetUniformLocation(this->shaderprogram,"Model_mat");
-        glUniformMatrix4fv(modelloc,1,GL_FALSE,glm::value_ptr(ent->model_matrix));
+        glUniformMatrix4fv(modelloc,1,GL_FALSE,glm::value_ptr(modelmat));
 
         // Passing Entity color as a uniform.
         unsigned int objcolloc = glGetUniformLocation(this->shaderprogram,"objcol");
         
-        std::cout << "Drawing Basis Vectors" << std::endl;
+        //std::cout << "Drawing Basis Vectors" << std::endl;
         glLineWidth(3.0f);
         glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
 
@@ -1194,6 +1197,8 @@ void Scene::drawobjectbasisvectors(glm::mat4 &persp , glm::mat4 &view , glm::vec
 
     }
 }
+
+
 
 
 ////////////////////////////////////////////////////
