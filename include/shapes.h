@@ -107,6 +107,7 @@ struct RigidBody
     float mass {1.0f};
     glm::mat3 InertiaG {1.0f};
     glm::mat3 invInertiaG {1.0f};
+    float restitution {1.0};
 
     // Local Moment of Inertia.
     glm::mat3 InertiaL {1.0f};

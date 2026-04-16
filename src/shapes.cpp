@@ -1072,7 +1072,7 @@ void RigidBody::updatestate(const float &dt)
     // Update Position and Orientation Based on Velocity and Angular Velocity.
     this->position = this->position + this->velocity * dt;
 
-    glm::quat omega = {0.0f, this->amomentum.x , this->amomentum.y, this->amomentum.z};
+    glm::quat omega = {0.0f, this->avelocity.x , this->avelocity.y , this->avelocity.z};
 
     this->orientation = this->orientation + (0.5f * omega *this->orientation * dt );
     this->orientation = glm::normalize(this->orientation);
@@ -1177,7 +1177,55 @@ void Scene::resolveContacts()
 {
     for (contact* con: this->contacts)
     {
-        //
+        // Each contact will have pointer to the bodies involved in the contact.
+
+        // First we find the velocity of contact point on each bodies.
+        // for body A.
+        glm::vec3 omegaA = con->bodyA->avelocity;
+        glm::vec3 omegaB = con->bodyB->avelocity;
+        glm::vec3 rA = con->point - con->bodyA->position;
+        glm::vec3 rB = con->point - con->bodyB->position;
+
+        glm::mat3 omegaAmat = { 0.0f ,omegaA.z ,-omegaA.y,
+                            -omegaA.z,   0.0f  ,omegaA.x,
+                            omegaA.y ,-omegaA.x,  0.0f  
+        };
+
+        glm::mat3 omegaBmat = { 0.0f ,omegaB.z ,-omegaB.y,
+                            -omegaB.z,   0.0f  ,omegaB.x,
+                            omegaB.y ,-omegaB.x,  0.0f  
+        };
+
+        glm::vec3 velocityPA = glm::cross(omegaA,rA) + con->bodyA->velocity; 
+        glm::vec3 velocityPB = glm::cross(omegaB,rB) + con->bodyB->velocity;
+
+        glm::vec3 relativePAB = velocityPA - velocityPB;  
+        float impulse = 0 ;
+        float e  = std::min(con->bodyA->restitution,con->bodyB->restitution);
+        if (glm::dot(relativePAB,con->normal) < 0.0f)
+        {
+            float linearPart = (1.0f/con->bodyA->mass) + (1.0f/con->bodyB->mass);
+            glm::vec3 A = con->bodyA->invInertiaG * glm::cross((con->point - con->bodyA->position),(con->normal));
+            glm::vec3 B = con->bodyB->invInertiaG * glm::cross((con->point - con->bodyB->position),(con->normal));
+            glm::vec3 AB = glm::cross(A,(con->point - con->bodyA->position)) + glm::cross(B,(con->point - con->bodyB->position));
+
+            float angularPart = glm::dot(AB,con->normal) ;
+            float denom = linearPart + angularPart;
+            float numer = -(1.0f + e) * (glm::dot(relativePAB,con->normal));
+
+            impulse = numer/denom;
+        }
+        glm::vec3 impforce = impulse * con->normal;
+
+        con->bodyA->lmomentum += impforce;
+        con->bodyB->lmomentum -= impforce;
+
+        con->bodyA->amomentum += glm::cross((con->point - con->bodyA->position),impforce);
+        con->bodyB->amomentum -= glm::cross((con->point - con->bodyB->position),impforce);
+
+        con->bodyA->position -= 0.5f * con->depth * con->normal;
+        con->bodyB->position += 0.5f * con->depth * con->normal;
+
     }
 }
 
