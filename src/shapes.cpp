@@ -1202,7 +1202,8 @@ void Scene::resolveContacts()
         glm::vec3 relativePAB = velocityPA - velocityPB;  
         float impulse = 0 ;
         float e  = std::min(con->bodyA->restitution,con->bodyB->restitution);
-        if (glm::dot(relativePAB,con->normal) < 0.0f)
+        
+        if (glm::dot(relativePAB,con->normal) > 0.0f)
         {
             float linearPart = (1.0f/con->bodyA->mass) + (1.0f/con->bodyB->mass);
             glm::vec3 A = con->bodyA->invInertiaG * glm::cross((con->point - con->bodyA->position),(con->normal));

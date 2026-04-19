@@ -92,7 +92,7 @@ int main()
     ent1->isWireFrame = false;
     ent1->entitybody->isCollider = true;
     ent1->entitybody->position = {-3.4f,3.0f,0.0f};
-    ent1->entitybody->amomentum = {2.0f,0.0f,0.0f};
+    //ent1->entitybody->amomentum = {2.0f,0.0f,0.0f};
     ent1->entitybody->lmomentum = {0.1f,0.0f,0.0f};
     //ent1->entitybody->updateorientation(32.4f, glm::vec3{1.0f,0.0f,0.0f});
 
@@ -112,9 +112,9 @@ int main()
 
     ent2->isWireFrame = false;
     ent2->entitybody->isCollider = true;
-    ent2->entitybody->position = {1.2f, 3.0f,0.0f};
-    ent2->entitybody->amomentum = {0.0f,2.0f,0.0f};
-    ent2->entitybody->lmomentum = {-0.1f,0.0f,0.0f};
+    ent2->entitybody->position = {1.2f, 2.5f,0.0f};
+    //ent2->entitybody->amomentum = {0.0f,2.0f,0.0f};
+    ent2->entitybody->lmomentum = {-1.0f,0.0f,0.0f};
     //ent2->entitybody->updateorientation(50.2f, glm::vec3{1.0f,1.0f,0.0f});
  
     /////////////////////////////////////////////////////////////////

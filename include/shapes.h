@@ -99,9 +99,7 @@ struct RigidBody
     
     // Derived 
     glm::vec3 velocity = {0.0f ,0.0f ,0.0f };
-    glm::vec3 acceleration = {0.0f ,0.0f ,0.0f };
     glm::vec3 avelocity = {0.0f,0.0f,0.0f};
-    glm::vec3 aacceleration = {0.0f,0.0f,0.0f};
 
     // Constants
     float mass {1.0f};

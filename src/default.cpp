@@ -245,7 +245,6 @@ void gui::GetEntityProp(Scene* scene ,int &id_param)
 
     static glm::vec3 pos  = ent->entitybody->position;
     static glm::vec3 vel = ent->entitybody->velocity;
-    static glm::vec3 accel = ent->entitybody->acceleration;
     static glm::vec3 axis = {1.0f ,0.0f ,0.0f};
     static float angle = 0.0f;
 
@@ -257,7 +256,6 @@ void gui::GetEntityProp(Scene* scene ,int &id_param)
     {
         pos = ent->entitybody->position;
         vel = ent->entitybody->velocity;
-        accel = ent->entitybody->acceleration;
         color = ent->col;
         enable_collision = ent->entitybody->isCollider;
         enable_wireframe = ent->isWireFrame;
@@ -267,7 +265,6 @@ void gui::GetEntityProp(Scene* scene ,int &id_param)
     {
         pos = ent->entitybody->position;
         vel = ent->entitybody->velocity;
-        accel = ent->entitybody->acceleration;
         color = ent->col;
         enable_collision = ent->entitybody->isCollider;
         enable_wireframe = ent->isWireFrame;
@@ -280,7 +277,6 @@ void gui::GetEntityProp(Scene* scene ,int &id_param)
     
     ImGui::SliderFloat3("Position",&pos.x,-5.0f ,5.0f,"%.1f");
     ImGui::SliderFloat3("Velocity",&vel.x,-5.0f ,5.0f,"%.1f");
-    ImGui::SliderFloat3("Acceleration",&accel.x,-5.0f ,5.0f,"%.1f");
 
     ImGui::SliderFloat3("Orientation Axis" , &axis.x,-1.0f,1.0f,"%.1f");
     ImGui::SliderFloat("Angle",&angle,-180.0f,180.0f,"%.1f");
@@ -296,7 +292,6 @@ void gui::GetEntityProp(Scene* scene ,int &id_param)
     ent->col = {color[0],color[1],color[2]};
     ent->entitybody->position = {pos[0],pos[1],pos[2]};
     ent->entitybody->velocity = {vel[0],vel[1],vel[2]};
-    ent->entitybody->acceleration = {accel[0],accel[1],accel[2]};
     ent->entitybody->isCollider = enable_collision;
     ent->entitybody->updateorientation(angle,axis);
 
